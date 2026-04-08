@@ -13,6 +13,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as Font from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
+import { ThemeProvider } from '@/hooks/useTheme';
 import { initAPIClient } from '@/services/api/APIClient';
 import { buildTokenStore, useSessionStore } from '@/store/sessionStore';
 import '../global.css';
@@ -66,16 +67,18 @@ export default function RootLayout() {
   }
 
   return (
-    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-      <QueryClientProvider client={queryClient}>
-        <AuthGuard />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="onboarding" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="patch-connect" options={{ presentation: 'modal' }} />
-        </Stack>
-      </QueryClientProvider>
-    </View>
+    <ThemeProvider>
+      <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+        <QueryClientProvider client={queryClient}>
+          <AuthGuard />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="onboarding" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="patch-connect" options={{ presentation: 'modal' }} />
+          </Stack>
+        </QueryClientProvider>
+      </View>
+    </ThemeProvider>
   );
 }
 

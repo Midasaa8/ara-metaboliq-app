@@ -1,11 +1,15 @@
 /**
- * PART:   Constants — Theme (Single Source of Truth)
+ * PART:   Constants — Theme (Dual Mode, Single Source of Truth)
  * ACTOR:  Gemini 3.1
- * PHASE:  1 — Project Setup
- * READS:  GEMINI_PHASES.md (Quy tắc màu sắc Y tế)
- * TASK:   Healthcare dual-mode color system (Light default + Dark option)
+ * PHASE:  1 — Project Setup → updated Phase 11 — Dual Theme
+ * READS:  GEMINI_PHASES.md §Design Language, PLAN_B §XI
+ * TASK:   Healthcare color system: Light (default) + Dark option
+ *         Both modes exported for use in hooks/useTheme.ts ThemeProvider
  * SCOPE:  IN: visual tokens only
  *         OUT: logic, API, business rules
+ *
+ * NOTE:   `colors` = lightColors (backward-compatible alias)
+ *         Components should migrate to useTheme() hook for dark mode support
  */
 
 // ── LIGHT MODE (default) ──
@@ -48,7 +52,9 @@ export const darkColors = {
   },
 } as const;
 
-// HACKATHON: Hardcode current theme to Light Mode so we don't break existing components
+// PHASE 11: `colors` is kept as a backward-compatible alias to lightColors.
+// After full migration, components should use useTheme() → const { colors } = useTheme();
+// This alias ensures existing imports still compile during the gradual migration.
 export const colors = lightColors;
 
 export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48 } as const;
