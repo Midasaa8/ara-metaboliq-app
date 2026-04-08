@@ -8,6 +8,7 @@
  *         OUT: H_score formula (server Phase 19), real BLE data (Phase 11)
  */
 
+import { useState } from 'react';
 import { ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -33,6 +34,17 @@ export default function HomeScreen() {
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? '☀️ Chào buổi sáng' : hour < 18 ? '🌤️ Buổi chiều' : '🌙 Buổi tối';
+
+  const [tapCount, setTapCount] = useState(0);
+
+  function handleSecretTap() {
+    if (tapCount + 1 >= 5) {
+      setTapCount(0);
+      router.push('/demo-flow');
+    } else {
+      setTapCount(tapCount + 1);
+    }
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -60,13 +72,17 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Health Score Ring (Phase 8: subScores breakdown) ── */}
-        <View style={styles.ringSection}>
+        {/* ── Health Score Ring (Secret: 5-tap for Demo Flow) ── */}
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={handleSecretTap}
+          style={styles.ringSection}
+        >
           {isLoading
             ? <View style={styles.ringPlaceholder} />
             : <HealthScoreRing score={score} size={210} thickness={15} subScores={subScores} />
           }
-        </View>
+        </TouchableOpacity>
 
         {/* ── Weakest-area insight (Phase 8) ── */}
         {!isLoading && (() => {
