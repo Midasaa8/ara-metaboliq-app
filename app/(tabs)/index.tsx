@@ -1,11 +1,11 @@
 /**
  * PART:   Home Dashboard Screen
  * ACTOR:  Claude Sonnet 4.6
- * PHASE:  3 — Home Dashboard
+ * PHASE:  8 — Health Score Engine (upgraded from Phase 3)
  * READS:  AGENTS.md §7, PLAN_B §XI Home Screen, §3 Health Score Dashboard
- * TASK:   Health Score ring + sub-score cards + streak + quick actions
+ * TASK:   Health Score ring + sub-score breakdown + weakest-area insight
  * SCOPE:  IN: layout, useHealthScore hook, usePatchConnection, VitalCard, HealthScoreRing
- *         OUT: score computation (server, Phase 8), real BLE data (Phase 11)
+ *         OUT: H_score formula (server Phase 19), real BLE data (Phase 11)
  */
 
 import { ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
@@ -20,6 +20,7 @@ import { usePatchConnection } from '@/hooks/usePatchConnection';
 import { useUserStore } from '@/store/userStore';
 import { useHealthStore } from '@/store/healthStore';
 import { colors, fonts, spacing, radius } from '@/constants/theme';
+import { getWeakestAreas, getScoreTier, SUB_SCORE_META } from '@/services/ai/HealthScore';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -58,13 +59,28 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Health Score Ring ── */}
+        {/* ── Health Score Ring (Phase 8: subScores breakdown) ── */}
         <View style={styles.ringSection}>
           {isLoading
             ? <View style={styles.ringPlaceholder} />
-            : <HealthScoreRing score={score} size={210} thickness={15} />
+            : <HealthScoreRing score={score} size={210} thickness={15} subScores={subScores} />
           }
         </View>
+
+        {/* ── Weakest-area insight (Phase 8) ── */}
+        {!isLoading && (() => {
+          const weak = getWeakestAreas(subScores);
+          const meta = SUB_SCORE_META[weak[0]];
+          const tier = getScoreTier(subScores[weak[0]]);
+          return (
+            <View style={[styles.insightBox, { borderColor: tier.color + '55', backgroundColor: tier.bgColor }]}>
+              <Ionicons name={meta.icon as React.ComponentProps<typeof Ionicons>['name']} size={16} color={tier.color} />
+              <Text style={[styles.insightText, { color: tier.color }]}>
+                Cần cải thiện: <Text style={{ fontWeight: '700' }}>{meta.label}</Text> ({subScores[weak[0]]}/100)
+              </Text>
+            </View>
+          );
+        })()}
 
         {/* ── Streak Banner ── */}
         {streakDays > 0 && (
@@ -191,6 +207,14 @@ const styles = StyleSheet.create({
 
   // Sub-score cards
   cardsRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
+
+  // Weakest-area insight box (Phase 8)
+  insightBox: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    borderRadius: radius.md, padding: spacing.md,
+    borderWidth: 1, marginBottom: spacing.sm,
+  },
+  insightText: { fontSize: fonts.sizes.sm, flex: 1 },
 
   // Vitals row
   vitalsRow: {
