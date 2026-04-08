@@ -15,43 +15,41 @@ import { colors } from '@/constants/theme';
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
 interface TabConfig {
-  name:        string;
-  title:       string;
-  icon:        IoniconName;
+  name: string;
+  title: string;
+  icon: IoniconName;
   iconFocused: IoniconName;
 }
 
 const TABS: TabConfig[] = [
-  { name: 'index',    title: 'Home',      icon: 'home-outline',    iconFocused: 'home' },
-  { name: 'voice',    title: 'Voice AI',  icon: 'mic-outline',     iconFocused: 'mic' },
-  { name: 'exercise', title: 'Exercise',  icon: 'fitness-outline', iconFocused: 'fitness' },
-  { name: 'twin',     title: 'Twin',      icon: 'body-outline',    iconFocused: 'body' },
-  { name: 'fintech',  title: 'Finance',   icon: 'wallet-outline',  iconFocused: 'wallet' },
+  { name: 'index', title: 'Home', icon: 'home-outline', iconFocused: 'home' },
+  { name: 'voice', title: 'Voice AI', icon: 'mic-outline', iconFocused: 'mic' },
+  { name: 'exercise', title: 'Exercise', icon: 'fitness-outline', iconFocused: 'fitness' },
+  { name: 'twin', title: 'Twin', icon: 'body-outline', iconFocused: 'body' },
+  { name: 'fintech', title: 'Finance', icon: 'wallet-outline', iconFocused: 'wallet' },
 ];
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerShown:    false,
-        // Keep all tab screens mounted — prevents state loss when switching tabs
-        unmountOnBlur:  false,
-        lazy:           true,
+        headerShown: false,
+        lazy: true,
         tabBarStyle: {
-          backgroundColor:  colors.surface,   // Space Grey #1C1C1E
-          borderTopColor:   colors.border,
-          borderTopWidth:   0.5,
-          elevation:        0,
-          shadowOpacity:    0,
-          height:           60,
-          paddingBottom:    8,
+          backgroundColor: colors.surface,   // Space Grey #1C1C1E
+          borderTopColor: colors.border,
+          borderTopWidth: 0.5,
+          elevation: 0,
+          shadowOpacity: 0,
+          height: 60,
+          paddingBottom: 8,
         },
-        tabBarActiveTintColor:   colors.primary,        // Signal Purple
+        tabBarActiveTintColor: colors.primary,        // Signal Purple
         tabBarInactiveTintColor: colors.text.muted,     // Dim grey
         tabBarLabelStyle: {
-          fontSize:   10,
+          fontSize: 10,
           fontWeight: '500',
-          marginTop:  -2,
+          marginTop: -2,
         },
       }}
     >
