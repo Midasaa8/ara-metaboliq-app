@@ -69,6 +69,9 @@ function ExerciseCard({
       <Text style={[styles.pebbleLabel, isActive && { color: '#fff' }]}>
         {exercise.label}
       </Text>
+      <Text style={[styles.pebbleMuscles, isActive && { color: 'rgba(255,255,255,0.7)' }]}>
+        {exercise.targetReps} reps
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -348,6 +351,16 @@ export default function ExerciseScreen() {
                       {repCounter.phase === 'down' ? '↓' : repCounter.phase === 'up' ? '↑' : '—'}
                     </Text>
                   </View>
+                  <View style={styles.statColumn}>
+                    <Text style={styles.statLabel}>ANGLE</Text>
+                    <Text style={[styles.statValue, { fontSize: 18 }]}>
+                      {repCounter.angles
+                        ? `${Math.round(repCounter.angles[
+                            selectedExercise.type === 'squat' ? 'left_knee' : 'left_elbow'
+                          ])}°`
+                        : '—'}
+                    </Text>
+                  </View>
                 </View>
               </View>
 
@@ -423,6 +436,7 @@ const styles = StyleSheet.create({
     shadowColor: colors.primary, shadowOpacity: 0.3, shadowRadius: 15, shadowOffset: { width: 0, height: 8 }, elevation: 6,
   },
   pebbleLabel: { color: colors.text.secondary, fontSize: fonts.sizes.sm, fontWeight: '700' },
+  pebbleMuscles: { color: colors.text.muted, fontSize: 10, fontWeight: '600', marginTop: 2 },
 
   idleStateBox: { alignItems: 'center', justifyContent: 'center', marginTop: 100, paddingHorizontal: spacing.xl },
   idleIconBox: { width: 100, height: 100, borderRadius: 50, backgroundColor: colors.surfaceElevated, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.lg },
