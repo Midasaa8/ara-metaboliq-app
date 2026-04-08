@@ -530,13 +530,21 @@ export const darkColors  = { /* xem GEMINI Phase 1 spec */ };
 
 ### PHASE 17 — Patch Hardware Detection UI
 
+> **⚠️ FIRMWARE**: Pod chạy firmware C + Zephyr RTOS (Opus Phase 18-19).  
+> Giao thức phần cứng bên trong Pod: SPI (IMU), I2C (PPG), ADC (nhiệt độ), PDM (mic).  
+> Gemini CHỈ làm UI hiển thị thông tin từ BLE — KHÔNG viết firmware.
+
 **File:** `app/patch-connect.tsx` (update Phase 10 version)
 
 Update UI to show:
 - Patch model detected (ARA-P1 / P2 / P3 / P4)
 - Patch remaining adhesive days
 - Battery level indicator
-- Firmware version
+- Firmware version (read from CHAR_PATCH_ID — Opus Phase 18)
+- **NEW**: OTA firmware update prompt UI (Opus Phase 21)
+  - Progress bar during DFU
+  - "Đang cập nhật firmware..." + purple LED indicator note
+  - Success/rollback status message
 
 ```typescript
 {/* TODO(Claude Sonnet - Phase 16): PatchDevice.ts BLE advertisement parsing */}

@@ -455,11 +455,468 @@
 
 ---
 
-## ── FULL PRODUCT PHASES (18+) ──
+## ── PHASE 18 — Pod Firmware: Zephyr RTOS + BLE GATT Service (nRF52840-DK) ──
+
+> **NGÔN NGỮ**: C (Zephyr RTOS) — KHÔNG phải TypeScript/Python  
+> **TARGET**: nRF52840-DK development kit (hackathon demo)  
+> **BUILD SYSTEM**: nRF Connect SDK v2.9+ (based on Zephyr RTOS)  
+> **Tại sao C + Zephyr**: Nordic official SDK, BLE 5.3 certified, production-proven, tài liệu đầy đủ  
+> **Full Product upgrade path**: Rust + Embassy (Phase 20-21) — 51% faster interrupt, 31% smaller code
+
+**Folder:** `/firmware/`
+
+```c
+// firmware/
+// ├── CMakeLists.txt
+// ├── prj.conf                           ← Zephyr Kconfig (BLE, I2C, SPI, ADC, PDM)
+// ├── boards/nrf52840dk_nrf52840.overlay  ← Device Tree overlay: pin mapping
+// ├── src/
+// │   ├── main.c                          ← entry point, thread init, power management
+// │   ├── ble_service.c / ble_service.h   ← custom ARA GATT service
+// │   └── drivers/                        ← sensor drivers (Phase 19)
+// └── build/                              ← compiled output (.hex, .bin)
+
+// ══════════════════════════════════════
+// prj.conf — Zephyr Kconfig
+// ══════════════════════════════════════
+// CONFIG_BT=y
+// CONFIG_BT_PERIPHERAL=y
+// CONFIG_BT_DEVICE_NAME="ARA-PATCH"
+// CONFIG_BT_DEVICE_NAME_DYNAMIC=y         ← append MAC last 4 digits
+// CONFIG_BT_MAX_CONN=1
+// CONFIG_BT_GAP_AUTO_UPDATE_CONN_PARAMS=y
+// CONFIG_BT_GATT_DYNAMIC_DB=y
+// CONFIG_BT_L2CAP_TX_MTU=247              ← BLE 5.0 extended MTU
+// CONFIG_BT_BUF_ACL_TX_SIZE=251
+//
+// CONFIG_I2C=y                            ← for MAX86176
+// CONFIG_SPI=y                            ← for LSM6DSO
+// CONFIG_ADC=y                            ← for NTC thermistor
+// CONFIG_AUDIO=y                          ← for MEMS Mic PDM
+// CONFIG_NRFX_PDM=y
+//
+// CONFIG_LOG=y
+// CONFIG_LOG_DEFAULT_LEVEL=3              ← LOG_LEVEL_INF
+// CONFIG_SYSTEM_WORKQUEUE_STACK_SIZE=2048
+
+// ══════════════════════════════════════
+// BLE GATT Service: ARA Health Service
+// ══════════════════════════════════════
+// SERVICE_UUID:   '0000ARA0-0000-1000-8000-00805F9B34FB'
+//   (matching Sonnet constants/hardware.ts)
+//
+// Characteristics:
+//
+// 1. CHAR_SENSOR_DATA (UUID: 0000ARA1, notify, 20 bytes):
+//    ┌──────────────┬────────────────┬──────────────────────────┐
+//    │ Byte 0-1     │ HR × 10        │ uint16 LE (72.5 → 725)  │
+//    │ Byte 2       │ SpO₂ %         │ uint8 (98)               │
+//    │ Byte 3-6     │ Temperature    │ float32 LE (36.5°C)      │
+//    │ Byte 7-18    │ PPG int16[6]   │ last 6 samples (25Hz)    │
+//    │ Byte 19      │ Flags          │ bit0=motion, bit1=contact│
+//    └──────────────┴────────────────┴──────────────────────────┘
+//    Notify interval: 40ms (25Hz) — matches Sonnet Phase 15 parser
+//
+// 2. CHAR_PPG_RAW (UUID: 0000ARA2, notify, 20 bytes):
+//    Raw dual-channel PPG for SpO₂ calculation (Opus Phase 13):
+//    [red_ac_2B][red_dc_2B][ir_ac_2B][ir_dc_2B] × 2 samples + seq_2B + flags_2B
+//
+// 3. CHAR_AUDIO (UUID: 0000ARA4, notify, 20 bytes):
+//    PDM mic data for GutMind (Opus Phase 24):
+//    [pdm_int16[8]] = 16 bytes + [seq_2B] + [flags_2B]
+//    On-demand: app sends write to start 30s gut sound recording
+//
+// 4. CHAR_PATCH_ID (UUID: 0000ARA3, read):
+//    Static string: "ARA-PATCH-{MAC_LAST4}-{SKU}-{FW_VERSION}"
+//    Example: "ARA-PATCH-A1B2-P1-1.0.0"
+//
+// Advertising:
+//   Name: "ARA-PATCH-{MAC_LAST4}" (matches Sonnet scan filter)
+//   Interval: 100ms (fast) → 1000ms (slow) after 30s no connection
+//   TX Power: 0 dBm (indoor range ~10m)
+
+// ══════════════════════════════════════
+// main.c — Entry Point
+// ══════════════════════════════════════
+// void main(void) {
+//   /* 1. Init BLE stack */
+//   bt_enable(NULL);
+//   ara_ble_service_init();       ← register GATT service + characteristics
+//   bt_le_adv_start(adv_params);  ← start advertising
+//
+//   /* 2. Init sensor drivers (Phase 19) */
+//   max86176_init();    ← I2C: PPG/SpO₂
+//   lsm6dso_init();     ← SPI: IMU
+//   ntc_adc_init();     ← ADC: temperature
+//   mems_mic_init();    ← PDM: microphone
+//
+//   /* 3. Start sensor threads */
+//   k_thread_create(&ppg_thread, ...   ppg_read_loop,   ... K_PRIO_COOP(5));
+//   k_thread_create(&imu_thread, ...   imu_read_loop,   ... K_PRIO_COOP(6));
+//   k_thread_create(&temp_thread, ...  temp_read_loop,  ... K_PRIO_COOP(7));
+//   /* mic_thread started on-demand via BLE write command */
+//
+//   /* 4. Main loop: pack sensor data → BLE notify */
+//   while (1) {
+//     pack_sensor_packet(sensor_buf, 20);    ← fill 20-byte CHAR_SENSOR_DATA
+//     bt_gatt_notify(NULL, &ara_svc.attrs[1], sensor_buf, 20);
+//     k_sleep(K_MSEC(40));                   ← 25Hz
+//   }
+// }
+//
+// Power Management (hackathon basic):
+//   Khi BLE disconnect > 60s → k_cpu_idle() (light sleep)
+//   Khi BLE reconnect → wake all threads
+//   Full power optimization → Phase 20 (full product)
+```
 
 ---
 
-## ── PHASE 18 — Blood Pressure: PITN (thay thế PTT) ──
+## ── PHASE 19 — Sensor Drivers: I2C + SPI + ADC + PDM ──
+
+> Viết driver C cho từng cảm biến. Chạy trên nRF52840 (bare metal qua Zephyr HAL).  
+> **QUAN TRỌNG**: Tất cả giao thức phần cứng Gemini mô tả (SPI, I2C, PDM, ADC) được implement ở đây.
+
+**Files:** `/firmware/src/drivers/`
+
+```c
+// ══════════════════════════════════════
+// I2C — MAX86176 (PPG + SpO₂ Dual-Channel)
+// ══════════════════════════════════════
+// File: firmware/src/drivers/max86176.c / max86176.h
+//
+// Bus: I2C0 (nRF52840 TWIM0)
+// Address: 0x54 (MAX86176 default)
+// Pull-ups: 4.7kΩ on SDA (P0.26) + SCL (P0.27)
+// Clock: 400kHz (I2C Fast Mode)
+//
+// Init sequence:
+//   1. Soft reset: write 0x01 to REG_MODE_CONFIG (0x09)
+//   2. Wait 10ms
+//   3. LED1 (RED 660nm): REG_LED1_PA = 0x3F  (current ~20mA)
+//   4. LED2 (IR 940nm):  REG_LED2_PA = 0x3F
+//   5. Sample rate: REG_SPO2_CONFIG = 0x27  (25 samples/sec, 18-bit ADC)
+//   6. FIFO: REG_FIFO_CONFIG = 0x06  (average 4 samples, rollover enabled)
+//   7. Mode: REG_MODE_CONFIG = 0x03  (SpO₂ mode: RED + IR alternate)
+//
+// Read loop (called every 40ms by ppg_thread):
+//   1. Read REG_FIFO_WR_PTR (0x04)
+//   2. Read REG_FIFO_RD_PTR (0x06)
+//   3. num_samples = (wr_ptr - rd_ptr) & 0x1F
+//   4. Read num_samples × 6 bytes from REG_FIFO_DATA (0x07):
+//      [RED_H, RED_M, RED_L, IR_H, IR_M, IR_L]  ← 18-bit packed
+//   5. Parse: red_raw = (H<<16 | M<<8 | L) & 0x3FFFF
+//   6. Store in ring buffer → ready for BLE notify
+//
+// AC/DC separation (on-chip, simple):
+//   DC = moving average (window=50 samples)
+//   AC = raw - DC
+//   → Sent via CHAR_PPG_RAW for SpO₂ calculation on phone (Opus Phase 13)
+
+// ══════════════════════════════════════
+// SPI — LSM6DSO (6-axis IMU: Accel + Gyro)
+// ══════════════════════════════════════
+// File: firmware/src/drivers/lsm6dso.c / lsm6dso.h
+//
+// Bus: SPI1 (nRF52840 SPIM1)
+// Pins: MOSI=P0.13, MISO=P0.14, SCK=P0.15, CS=P0.11
+// Clock: 4MHz, CPOL=0, CPHA=0 (SPI Mode 0)
+// Full-duplex: simultaneous TX+RX (SPI advantage over I2C)
+//
+// Init sequence:
+//   1. Read WHO_AM_I (0x0F) → expect 0x6C (LSM6DSO ID)
+//   2. CTRL1_XL (0x10) = 0x40  (accel: ODR=104Hz, ±4g, LPF1)
+//   3. CTRL2_G  (0x11) = 0x40  (gyro: ODR=104Hz, ±500dps)
+//   4. CTRL3_C  (0x12) = 0x44  (BDU=1, auto-increment, IF_INC)
+//   5. INT1_CTRL (0x0D) = 0x01  (data-ready interrupt on INT1 pin)
+//   6. CTRL6_C  (0x15) = 0x10  (accel high-performance mode OFF → save power)
+//
+// Read loop (called every 40ms by imu_thread, decimated from 104Hz):
+//   1. Read STATUS_REG (0x1E) → check XLDA + GDA bits
+//   2. Burst read 12 bytes from OUTX_L_G (0x22):
+//      [gx_L, gx_H, gy_L, gy_H, gz_L, gz_H, ax_L, ax_H, ay_L, ay_H, az_L, az_H]
+//   3. Convert: accel_g = raw × 0.122 / 1000  (±4g sensitivity = 0.122 mg/LSB)
+//   4. Convert: gyro_dps = raw × 17.50 / 1000  (±500dps sensitivity = 17.50 mdps/LSB)
+//
+// Motion detection (for PPG artifact flagging):
+//   accel_magnitude = √(ax² + ay² + az²)
+//   if accel_magnitude > 2.0g → set MOTION_FLAG in BLE packet byte 19 bit0
+//   → Opus PPG Phase 12 reads this flag → skip noisy PPG samples
+
+// ══════════════════════════════════════
+// ADC — NTC 10kΩ Thermistor (Temperature)
+// ══════════════════════════════════════
+// File: firmware/src/drivers/ntc_adc.c / ntc_adc.h
+//
+// Channel: AIN0 (P0.02) — nRF52840 SAADC
+// Resolution: 12-bit (0-4095)
+// Reference: Internal 0.6V + 1/6 gain = effective 3.6V range
+// Voltage divider circuit:
+//   Vcc (3.3V) — [R_ref 10kΩ] — AIN0 — [NTC 10kΩ] — GND
+//
+// Read (called every 1000ms by temp_thread):
+//   1. adc_raw = nrfx_saadc_sample()
+//   2. V_out = adc_raw × (3.6 / 4096)
+//   3. NTC_R = R_ref × V_out / (Vcc - V_out)
+//   4. Steinhart-Hart: 1/T = A + B×ln(R) + C×(ln(R))³
+//      A = 1.009249522e-3, B = 2.378405444e-4, C = 2.019202697e-7
+//      (same coefficients as Opus Phase 14 TemperatureProcessor.ts)
+//   5. T_celsius = (1/T_kelvin) - 273.15
+//   6. Pack as float32 into sensor_buf[3:6]
+//
+// Why on-chip instead of phone-side:
+//   Temperature changes slowly (1Hz) + Steinhart-Hart is cheap
+//   → Save BLE bandwidth by sending °C instead of raw ADC
+
+// ══════════════════════════════════════
+// PDM — SPU0410HR5H-PB MEMS Microphone
+// ══════════════════════════════════════
+// File: firmware/src/drivers/mems_mic.c / mems_mic.h
+//
+// Interface: PDM (Pulse-Density Modulation) — NOT analog, NOT I2S
+// Pins: CLK=P0.25, DATA=P0.24
+// PDM clock: 1.024 MHz → decimation filter → 16kHz PCM output
+// nRF52840 has HARDWARE PDM peripheral (nrfx_pdm) — zero CPU overhead
+//
+// Operation modes:
+//   Mode 1 — VOICE CHECK (5 seconds, on-demand from app):
+//     1. App writes 0x01 to CHAR_AUDIO → triggers recording
+//     2. PDM captures 5s × 16kHz = 80,000 int16 samples
+//     3. Downsample 16kHz → 8kHz (factor 2, anti-alias LPF)
+//     4. Stream via CHAR_AUDIO notify: 8 samples × 2 bytes = 16B + 4B header = 20B
+//     5. Total packets: 40,000 samples / 8 = 5,000 packets over 5s
+//     6. BLE throughput needed: 5000 × 20B / 5s = 20KB/s ✅ (BLE 5.0 handles ~125KB/s)
+//
+//   Mode 2 — GUT SOUND (30 seconds, on-demand):
+//     1. App writes 0x02 to CHAR_AUDIO → triggers 30s recording
+//     2. Same pipeline but 30s duration
+//     3. Frequency range of interest: 50-600Hz (bowel sounds)
+//     4. Server-side BowelRCNN processes spectrogram (Opus Phase 24)
+//
+// Privacy:
+//   Mic is ALWAYS OFF unless app explicitly requests
+//   LED blinks during recording (user awareness)
+//   No on-device audio storage — stream directly via BLE
+//
+// Noise handling:
+//   PDM naturally rejects EMI (1-bit oversampled signal)
+//   Additional: high-pass filter fc=20Hz (remove DC + breathing)
+
+// ══════════════════════════════════════
+// Sensor Manager — Orchestrator
+// ══════════════════════════════════════
+// File: firmware/src/sensor_manager.c / sensor_manager.h
+//
+// Thread architecture (Zephyr cooperative threads):
+//   Thread 1 — ppg_thread    (priority 5, 10ms period):  I2C read MAX86176
+//   Thread 2 — imu_thread    (priority 6, 40ms period):  SPI read LSM6DSO
+//   Thread 3 — temp_thread   (priority 7, 1000ms period): ADC read NTC
+//   Thread 4 — mic_thread    (priority 8, on-demand):     PDM capture MEMS
+//   Main     — ble_notify    (priority 4, 40ms period):   pack + BLE notify
+//
+// Data flow:
+//   sensor drivers → ring buffers (lock-free SPSC) → sensor_manager → BLE notify
+//
+// Ring buffer sizes:
+//   ppg_buf:  128 samples × 6B = 768B  (MAX86176 dual-channel)
+//   imu_buf:  32 samples × 12B = 384B  (LSM6DSO 6-axis)
+//   temp_buf: 4 samples × 4B = 16B     (NTC float32)
+//   mic_buf:  512 samples × 2B = 1KB   (PDM int16, streaming mode)
+//
+// Total SRAM usage: ~3KB for sensor buffers
+// nRF52840 has 256KB SRAM → plenty of headroom
+```
+
+---
+
+## ── FULL PRODUCT PHASES (20+) ──
+
+---
+
+## ── PHASE 20 — Custom Flex PCB Firmware + Power Management ──
+
+> **Chuyển từ nRF52840-DK (hackathon) sang bo mạch dẻo sản phẩm thật.**  
+> **Tùy chọn ngôn ngữ**: Giữ C + Zephyr (safe) HOẶC migrate sang Rust + Embassy (tối ưu hơn).  
+> **Rust + Embassy benchmark** (Tweedegolf 2025): Interrupt 51% nhanh hơn, code 31% nhỏ hơn, RAM 84% ít hơn.
+
+**Files:** `/firmware/` (update from hackathon Phase 18-19)
+
+```c
+// ══════════════════════════════════════
+// MIGRATION: DK → Custom Flex PCB
+// ══════════════════════════════════════
+// 1. New Device Tree Overlay: boards/ara_pod_v1.overlay
+//    - Pin remapping: flex PCB uses different GPIO assignment
+//    - I2C0: SDA=P0.06, SCL=P0.08  (routed on flex PCB trace)
+//    - SPI1: updated CS/MOSI/MISO/SCK pins per PCB layout
+//    - ADC: AIN0 unchanged (P0.02)
+//    - PDM: CLK/DATA may change per PCB routing
+//    - LED: WS2812B on P0.16 (status LED)
+//
+// 2. Kconfig additions (prj.conf):
+//    CONFIG_PM=y                    ← Zephyr Power Management subsystem
+//    CONFIG_PM_DEVICE=y             ← per-device power states
+//    CONFIG_BT_CTLR_TX_PWR_MINUS_8 ← reduce TX power for battery life
+//    CONFIG_WATCHDOG=y
+//    CONFIG_WDT_NRFX=y
+
+// ══════════════════════════════════════
+// POWER MANAGEMENT — EnerCera 0.45mm Battery
+// ══════════════════════════════════════
+// Battery: EnerCera ET-L 3.8V, ~3mAh (ultra-thin ceramic)
+// Target: ≥24h continuous, ≥7 days light use
+//
+// Sleep States (Zephyr PM):
+//   STATE_ACTIVE:      All sensors ON, BLE connected, 40ms notify     (~3mA)
+//   STATE_IDLE:        BLE connected, sensors 1Hz, notify 1000ms      (~0.5mA)
+//   STATE_LIGHT_SLEEP: BLE advertising only, sensors OFF               (~0.1mA)
+//   STATE_SYSTEM_OFF:  Everything OFF, wake on button/motion           (~2μA)
+//
+// Transition rules:
+//   ACTIVE → IDLE:        BLE connected but no app foreground > 60s
+//   IDLE → LIGHT_SLEEP:   BLE disconnected > 120s
+//   LIGHT_SLEEP → OFF:    No BLE connection > 30min
+//   Any → ACTIVE:         BLE notification subscribe received
+//   OFF → ACTIVE:         LSM6DSO wake-on-motion interrupt (INT1 pin)
+//                          OR button press (P0.18 → GPIOTE)
+//
+// Dynamic BLE Connection Interval:
+//   Active streaming:  conn_interval = 7.5ms (fastest, for 25Hz PPG)
+//   Idle monitoring:   conn_interval = 400ms (normal)
+//   Light use:         conn_interval = 4000ms (maximum energy save)
+//   Negotiated via bt_conn_le_param_update()
+
+// ══════════════════════════════════════
+// LED STATUS (WS2812B)
+// ══════════════════════════════════════
+// Blue blink (1Hz):    Advertising, waiting for app connection
+// Green solid:         Connected + streaming data
+// Green blink slow:    Connected + idle mode
+// Red blink fast:      Low battery (<10%)
+// Purple pulse:        Firmware update in progress (Phase 21)
+// OFF:                 System OFF sleep state
+
+// ══════════════════════════════════════
+// WATCHDOG TIMER
+// ══════════════════════════════════════
+// Timeout: 30 seconds
+// Feed: in main BLE notify loop (every 40ms when active)
+// If firmware hangs → watchdog resets MCU → re-init → resume advertising
+// Safety: prevents bricked device in the field
+
+// ══════════════════════════════════════
+// RUST + EMBASSY OPTION (v2 optimization)
+// ══════════════════════════════════════
+// If team decides to migrate from C/Zephyr to Rust/Embassy:
+//
+// Toolchain: cargo + probe-rs + embassy-nrf
+// HAL: embassy-nrf (supports nRF52840 native)
+// Async: embassy-executor (cooperative, no RTOS overhead)
+// BLE: nrf-softdevice crate (wraps Nordic SoftDevice S140)
+//
+// Key benefits:
+//   - Memory safety at compile time (no buffer overflows)
+//   - async/await sensors: auto-sleep between reads (zero CPU waste)
+//   - 51% faster interrupt response (Tweedegolf benchmark)
+//   - 84% less RAM (872B vs 5.5KB for equivalent FreeRTOS)
+//
+// Migration effort: ~2 weeks (rewrite drivers, keep same BLE GATT interface)
+// Risk: smaller community, less Nordic official support
+// Decision point: after hackathon, based on team Rust experience
+```
+
+---
+
+## ── PHASE 21 — OTA Firmware Update + Edge Signal Processing ──
+
+> **OTA DFU**: Cho phép cập nhật firmware qua BLE từ app (không cần dây).  
+> **Edge Processing**: Xử lý tín hiệu ngay trên chip → giảm băng thông BLE → tiết kiệm pin.
+
+**Files:** `/firmware/src/ota_dfu.c` + `/firmware/src/edge_processing.c`
+
+```c
+// ══════════════════════════════════════
+// OTA DFU (Over-The-Air Device Firmware Update)
+// ══════════════════════════════════════
+// Protocol: Nordic DFU over BLE (MCUboot + Zephyr)
+// File: firmware/src/ota_dfu.c
+//
+// Dual-bank flash layout (nRF52840 1MB Flash):
+//   ┌──────────────────┐ 0x00000
+//   │ MBR (4KB)        │ Master Boot Record
+//   ├──────────────────┤ 0x01000
+//   │ MCUboot (48KB)   │ Bootloader (immutable)
+//   ├──────────────────┤ 0x0D000
+//   │ Bank A (440KB)   │ Active firmware image
+//   ├──────────────────┤ 0x7A000
+//   │ Bank B (440KB)   │ Staging area for new image
+//   ├──────────────────┤ 0xE7000
+//   │ Settings (32KB)  │ MCUboot swap info + app config
+//   └──────────────────┘ 0x100000
+//
+// Update flow:
+//   1. App checks /api/firmware/latest → { version: "1.1.0", url: "...", sha256: "..." }
+//   2. App compares with CHAR_PATCH_ID firmware version
+//   3. If newer: app prompts user → downloads .bin → streams via BLE DFU service
+//   4. MCUboot receives image → writes to Bank B → validates SHA-256 checksum
+//   5. MCUboot sets swap flag → reboot → boot from Bank B
+//   6. New firmware self-tests (BLE init + sensor init in 10s)
+//   7. If self-test PASS → confirm Bank B as primary
+//   8. If self-test FAIL OR 3 consecutive boot failures → rollback to Bank A
+//
+// Security:
+//   Image MUST be signed with Ed25519 key (build-time)
+//   MCUboot rejects unsigned/tampered images
+//   SHA-256 integrity check before swap
+//
+// LED: Purple pulse during DFU (user awareness)
+// Timeout: If DFU stalls > 5min → abort → keep Bank A
+
+// ══════════════════════════════════════
+// EDGE SIGNAL PROCESSING (on-chip)
+// ══════════════════════════════════════
+// File: firmware/src/edge_processing.c
+//
+// Purpose: Process signals ON the nRF52840 → send results instead of raw data
+//          → reduces BLE bandwidth from ~4 Kbps to ~1 Kbps → longer battery life
+//
+// ── PPG Bandpass Filter (0.5-4 Hz) ──
+// 2nd-order Butterworth IIR (biquad) — runs in fixed-point Q15
+// Coefficients pre-computed for fs=25Hz:
+//   b = [0.1448, 0.0, -0.1448]  (bandpass)
+//   a = [1.0, -1.5610, 0.7104]
+// Implementation: Direct Form II Transposed (2 multiply-accumulates per sample)
+// Result: clean PPG without baseline wander or high-freq muscle noise
+//
+// ── On-chip Peak Detection ──
+// Derivative-based: detect negative-to-positive zero crossing of d(PPG)/dt
+// Minimum peak distance: 0.3s (= 200 BPM max, 7-8 samples at 25Hz)
+// Minimum prominence: 10% of signal amplitude
+// Output: peak_timestamps[] + peak_amplitudes[] → send instead of raw waveform
+//
+// ── Motion Rejection ──
+// From LSM6DSO accel: if |accel_mag - 1.0g| > 0.5g → MOTION flag
+// When MOTION=true:
+//   - PPG peaks marked unreliable (flag in BLE packet)
+//   - Opus Phase 12 DPNet denoiser handles on phone side
+//   - If motion > 5s continuous → pause PPG send (save BLE bandwidth)
+//
+// ── Delta Encoding (compression) ──
+// Instead of sending absolute values, send delta from previous:
+//   delta_ppg = ppg[n] - ppg[n-1]   (typically fits in int8 vs int16)
+//   delta_temp = temp[n] - temp[n-1] (float16 instead of float32)
+// Compression ratio: ~40% bandwidth reduction for slowly-changing signals
+//
+// ── Bandwidth Budget ──
+// Raw mode (hackathon):      20B × 25Hz = 500 B/s = 4 Kbps
+// Edge mode (full product):  12B × 25Hz = 300 B/s ≈ 2.4 Kbps
+// With delta encoding:       8B × 25Hz  = 200 B/s ≈ 1.6 Kbps
+// BLE 5.0 capacity:          ~125 KB/s → we use < 1% → plenty of headroom
+```
+
+---
+
+## ── PHASE 22 — Blood Pressure: PITN (thay thế PTT) ──
 
 > **⚡ UPGRADE v4.0**: PTT Method → PITN Physics-Informed Temporal Network  
 > **Nguồn**: arXiv:2408.08488 [cs.LG], Dec 2024  
@@ -539,7 +996,7 @@
 
 ---
 
-## ── PHASE 20 — Twin AI: Multi-output XGBoost ──
+## ── PHASE 23 — Twin AI: Multi-output XGBoost ──
 
 > Runs on server (Python FastAPI). `ChronoOS.ts` trên mobile chỉ nhận kết quả.
 
@@ -577,7 +1034,7 @@
 
 ---
 
-## ── PHASE 21 — ChronoOS: Temporal Fusion Transformer (thay thế vanilla LSTM) ──
+## ── PHASE 24 — ChronoOS: Temporal Fusion Transformer (thay thế vanilla LSTM) ──
 
 > **⚡ UPGRADE**: Vanilla LSTM 2-layer → TFT (OmniTFT-inspired, arXiv:2511.19485, Nov 2025)  
 > **Tại sao**: LSTM không xử lý missing data, không interpretable, gradient vanishing trên 48 steps  
@@ -641,7 +1098,7 @@
 
 ---
 
-## ── PHASE 23 — Security Stack ──
+## ── PHASE 25 — Security Stack ──
 
 **Implements TRONG FastAPI backend** `/backend/security/`
 
@@ -703,7 +1160,7 @@
 
 ---
 
-## ── PHASE 24 — GutMind: BowelRCNN (thay thế basic CNN) ──
+## ── PHASE 26 — GutMind: BowelRCNN (thay thế basic CNN) ──
 
 > **⚡ UPGRADE**: Basic CNN → BowelRCNN (arXiv:2504.08659, Apr 2025)  
 > **Kết quả**: 96% accuracy, F1=71% — event-level detection (không chỉ segment-level)  
@@ -782,7 +1239,7 @@
 
 ---
 
-## ── PHASE 25 — Bento Grid AI: Adaptive Layout Personalization (Full Product) ──
+## ── PHASE 27 — Bento Grid AI: Adaptive Layout Personalization (Full Product) ──
 
 > **Chỉ Full Product — hackathon chưa cần.**  
 > AI tự động điều chỉnh bố cục lưới Bento dựa trên hành vi người dùng.  
@@ -925,7 +1382,7 @@
 
 ---
 
-## ── PHASE 26 — Progressive Onboarding AI (Full Product) ──
+## ── PHASE 28 — Progressive Onboarding AI (Full Product) ──
 
 > **Chỉ Full Product — hackathon dùng static onboarding đơn giản.**  
 > Áp dụng 6 nguyên tắc UX: Progressive Disclosure, Validating Language,  

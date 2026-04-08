@@ -21,6 +21,9 @@
    - Light: nền #F8FAFB, accent Blue #2563EB + Green #059669
    - Dark: KHÔNG #000000/#FFFFFF, nền #181818, accent desaturated #60A5FA/#34D399
    - Khi cần màu → import { lightColors, darkColors } from 'constants/theme'
+10. FIRMWARE (C/Zephyr trên nRF52840) → Opus Phase 18-19 viết.
+    Sonnet CHỈ viết phone-side BLE client. KHÔNG viết driver SPI/I2C/ADC/PDM.
+    BLE packet format 20-byte → xem Opus Phase 18 GATT spec.
 ```
 
 ---
@@ -599,6 +602,11 @@ Hackathon demo checklist (Sonnet thực hiện):
 ---
 
 ### PHASE 15 — BLE Hardware Layer
+
+> **⚠️ DEPENDENCY**: Phase này nhận data từ **firmware nRF52840** (Opus Phase 18-19).  
+> Firmware viết bằng **C + Zephyr RTOS**, chạy trên Pod chip, truyền data qua BLE GATT.  
+> Sonnet CHỈ viết **phone-side BLE client** (React Native) — KHÔNG viết firmware.  
+> Giao thức phần cứng (SPI, I2C, ADC, PDM) → xem Opus Phase 19.
 
 **File:** `services/hardware/BLEService.ts`
 
