@@ -34,7 +34,7 @@ const VOICE_PROMPT =
 const SUB_SCORE_CONFIG: Array<{
   key: keyof VoiceAnalyzeResponse['sub_scores'];
   label: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: React.ComponentProps<typeof Ionicons>['name'];
 }> = [
     { key: 'energy', label: 'Energy', icon: 'flash' },
     { key: 'stress', label: 'Stress Control', icon: 'fitness' },
@@ -56,7 +56,7 @@ function RiskCard({
   score,
 }: {
   label: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: React.ComponentProps<typeof Ionicons>['name'];
   score: number;
 }) {
   const color = scoreColor(score);

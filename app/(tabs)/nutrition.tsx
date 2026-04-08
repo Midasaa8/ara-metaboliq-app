@@ -48,7 +48,7 @@ export default function NutritionScreen() {
                         <Ionicons name="time" size={24} color={colors.text.primary} />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.avatarWrap}>
-                        <Ionicons name="person-circle" size={32} color={colors.primaryContainer} />
+                        <Ionicons name="person-circle" size={32} color={colors.primary} />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -172,7 +172,7 @@ export default function NutritionScreen() {
                         {/* Mini Bar Chart */}
                         <View style={styles.chartArea}>
                             <View style={styles.chartCol}>
-                                <View style={[styles.chartBar, { height: '60%', backgroundColor: colors.primaryContainer }]} />
+                                <View style={[styles.chartBar, { height: '60%', backgroundColor: colors.primary + '40' }]} />
                                 <Text style={styles.chartLabel}>Your Cost</Text>
                             </View>
                             <View style={styles.chartCol}>
