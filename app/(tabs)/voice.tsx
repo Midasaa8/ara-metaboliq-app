@@ -21,14 +21,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, fonts, spacing, radius } from '@/constants/theme';
+import { colors, fonts, spacing, radius, elevation } from '@/constants/theme';
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
 import Waveform from '@/components/health/Waveform';
 import type { VoiceAnalyzeResponse } from '@/services/api/voiceAPI';
 
-// ── Vietnamese prompt text (user reads aloud during recording) ──
+// ── Voice prompt (user reads aloud) ──
 const VOICE_PROMPT =
-  'Hôm nay tôi cảm thấy khoẻ. Tôi đã ngủ đủ giấc và sẵn sàng cho một ngày mới đầy năng lượng.';
+  'Today I feel great. I had a good night\'s sleep and I am ready for a new day full of energy.';
 
 // ── Sub-score display config ──
 const SUB_SCORE_CONFIG: Array<{
@@ -191,7 +191,7 @@ export default function VoiceScreen() {
             <Animated.View style={{ transform: [{ rotate: spin }] }}>
               <Ionicons name="analytics" size={56} color={colors.secondary} />
             </Animated.View>
-            <Text style={styles.analyzingTitle}>Đang phân tích…</Text>
+            <Text style={styles.analyzingTitle}>Analyzing your voice…</Text>
             <Text style={styles.analyzingSubtitle}>
               MARVEL pipeline · GeMAPS 88-dim · XGBoost
             </Text>
@@ -365,7 +365,8 @@ const styles = StyleSheet.create({
   // Bento Result Stage
   resultBento: { paddingTop: spacing.xl, gap: spacing.md },
   bentoMainCard: {
-    backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.xl, position: 'relative', overflow: 'hidden',
+    backgroundColor: colors.surface, borderRadius: radius.xl, padding: spacing.xl,
+    position: 'relative', overflow: 'hidden', ...elevation.mid,
   },
   bentoIconTopRight: { position: 'absolute', top: spacing.lg, right: spacing.lg, opacity: 0.1 },
   bentoLabel: { fontSize: 10, fontWeight: '900', color: colors.primary, letterSpacing: 1.5, marginBottom: spacing.md },
@@ -375,7 +376,7 @@ const styles = StyleSheet.create({
   bentoActionBtnText: { color: '#fff', fontSize: fonts.sizes.md, fontWeight: '700' },
 
   bentoSubRow: { flexDirection: 'row', gap: spacing.md },
-  historyStackCard: { flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md },
+  historyStackCard: { flex: 1, backgroundColor: colors.surface, borderRadius: radius.xl, padding: spacing.md, ...elevation.low },
   historyItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
   historyIconBox: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   historyTitle: { color: colors.text.primary, fontSize: fonts.sizes.sm, fontWeight: '700' },
@@ -383,7 +384,7 @@ const styles = StyleSheet.create({
   viewInsightsBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 'auto', paddingTop: spacing.sm },
   viewInsightsText: { color: colors.primary, fontSize: fonts.sizes.xs, fontWeight: '800' },
 
-  riskVerticalStack: { flex: 1, flexShrink: 0, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md },
+  riskVerticalStack: { flex: 1, flexShrink: 0, backgroundColor: colors.surface, borderRadius: radius.xl, padding: spacing.md, ...elevation.low },
   riskCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs },
   riskIconBox: { width: 32, height: 32, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
   riskLabel: { color: colors.text.secondary, fontSize: 10 },
