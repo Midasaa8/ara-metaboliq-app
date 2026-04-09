@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "temp-app",
-    "slug": "temp-app",
+    "name": "ARA MetaboliQ",
+    "slug": "ara-metaboliq",
     "version": "1.0.0",
+    "scheme": "ara-metaboliq",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",

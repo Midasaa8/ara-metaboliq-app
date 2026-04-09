@@ -7,13 +7,14 @@
  *         OUT: screen UI (each screen handles that)
  */
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import * as Font from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { ThemeProvider } from '@/hooks/useTheme';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
+import { DemoDataSeeder } from '@/services/demo/DemoDataSeeder';
 import { initAPIClient } from '@/services/api/APIClient';
 import { buildTokenStore, useSessionStore } from '@/store/sessionStore';
 import '../global.css';
@@ -48,36 +49,41 @@ function AuthGuard() {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded, fontError] = Font.useFonts({
-    // Use system fonts that don't need asset files — avoids missing font crash
-    // Real custom fonts can be added here when assets are available (Phase 24)
-    'Inter-Regular': require('@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf'),
-    'Inter-Medium': require('@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf'),
-    'SpaceGrotesk-Bold': require('@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf'),
-  });
+  const [appReady, setAppReady] = useState(false);
 
-  const onLayoutRootView = useCallback(async () => {
-    if (fontsLoaded || fontError) {
-      await SplashScreen.hideAsync();
+  useEffect(() => {
+    async function prepare() {
+      try {
+        // Seed demo data for hackathon (IS_HACKATHON=true)
+        DemoDataSeeder.activate();
+        // Fonts: using system fonts for hackathon (Inter/SpaceGrotesk not bundled yet)
+        // Phase 24: add proper font asset files and load them here
+        await SplashScreen.hideAsync();
+      } catch (e) {
+        // Ignore
+      } finally {
+        setAppReady(true);
+      }
     }
-  }, [fontsLoaded, fontError]);
+    prepare();
+  }, []);
 
-  if (!fontsLoaded && !fontError) {
-    return null; // Hold render until fonts ready
-  }
+  if (!appReady) return null;
 
   return (
     <ThemeProvider>
-      <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-        <QueryClientProvider client={queryClient}>
-          <AuthGuard />
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="onboarding" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="patch-connect" options={{ presentation: 'modal' }} />
-          </Stack>
-        </QueryClientProvider>
-      </View>
+      <ErrorBoundary screenName="Root">
+        <View style={{ flex: 1 }}>
+          <QueryClientProvider client={queryClient}>
+            <AuthGuard />
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="onboarding" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="patch-connect" options={{ presentation: 'modal' }} />
+            </Stack>
+          </QueryClientProvider>
+        </View>
+      </ErrorBoundary>
     </ThemeProvider>
   );
 }
