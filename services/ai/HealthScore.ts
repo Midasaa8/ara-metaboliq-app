@@ -19,19 +19,19 @@ import { colors } from '@/constants/theme';
 export type SubScoreKey = 'exercise' | 'sleep' | 'voice' | 'nutrition' | 'discipline';
 
 export interface SubScores {
-  exercise:   number;  // 0-100 · Weight: 0.25 (server)
-  sleep:      number;  // 0-100 · Weight: 0.20 (server)
-  voice:      number;  // 0-100 · Weight: 0.25 (server)
-  nutrition:  number;  // 0-100 · Weight: 0.15 (server)
+  exercise: number;  // 0-100 · Weight: 0.25 (server)
+  sleep: number;  // 0-100 · Weight: 0.20 (server)
+  voice: number;  // 0-100 · Weight: 0.25 (server)
+  nutrition: number;  // 0-100 · Weight: 0.15 (server)
   discipline: number;  // 0-100 · Weight: 0.15 (server)
 }
 
 // ── Score tier ──
 export interface ScoreTier {
-  color:   string;
+  color: string;
   bgColor: string;  // color + opacity for backgrounds
-  label:   string;
-  emoji:   string;
+  label: string;
+  emoji: string;
 }
 
 /**
@@ -44,38 +44,38 @@ export interface ScoreTier {
  */
 export function getScoreTier(score: number): ScoreTier {
   if (score >= 90) return {
-    color:   colors.health.good,
+    color: colors.health.good,
     bgColor: colors.health.good + '20',
-    label:   'Xuất sắc',
-    emoji:   '🏆',
+    label: 'Xuất sắc',
+    emoji: '🏆',
   };
   if (score >= 75) return {
-    color:   colors.health.good + 'CC', // 80% opacity
+    color: colors.health.good + 'CC', // 80% opacity
     bgColor: colors.health.good + '15',
-    label:   'Tốt',
-    emoji:   '✅',
+    label: 'Tốt',
+    emoji: '✅',
   };
   if (score >= 60) return {
-    color:   colors.health.warning,
+    color: colors.health.warning,
     bgColor: colors.health.warning + '20',
-    label:   'Trung bình',
-    emoji:   '⚠️',
+    label: 'Trung bình',
+    emoji: '⚠️',
   };
   return {
-    color:   colors.health.danger,
+    color: colors.health.danger,
     bgColor: colors.health.danger + '20',
-    label:   'Cần cải thiện',
-    emoji:   '🔴',
+    label: 'Cần cải thiện',
+    emoji: '🔴',
   };
 }
 
 // ── Sub-score metadata ──
 export const SUB_SCORE_META: Record<SubScoreKey, { label: string; icon: string; unit: string }> = {
-  exercise:   { label: 'Vận động',   icon: 'fitness-outline',          unit: 'E' },
-  sleep:      { label: 'Giấc ngủ',   icon: 'moon-outline',             unit: 'S' },
-  voice:      { label: 'Giọng nói',  icon: 'mic-outline',              unit: 'V' },
-  nutrition:  { label: 'Dinh dưỡng', icon: 'nutrition-outline',        unit: 'N' },
-  discipline: { label: 'Kỷ luật',    icon: 'shield-checkmark-outline', unit: 'D' },
+  exercise: { label: 'Exercise', icon: 'fitness-outline', unit: 'E' },
+  sleep: { label: 'Sleep', icon: 'moon-outline', unit: 'S' },
+  voice: { label: 'Voice', icon: 'mic-outline', unit: 'V' },
+  nutrition: { label: 'Nutrition', icon: 'nutrition-outline', unit: 'N' },
+  discipline: { label: 'Discipline', icon: 'shield-checkmark-outline', unit: 'D' },
 };
 
 /**

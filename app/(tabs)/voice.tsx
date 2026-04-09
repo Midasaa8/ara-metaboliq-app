@@ -13,7 +13,17 @@ import {
   ScrollView, ActivityIndicator, Animated, Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  Mic2,
+  Square,
+  AlertCircle,
+  Sparkles,
+  Zap,
+  Activity,
+  Heart,
+  Wind,
+  LucideIcon
+} from 'lucide-react-native';
 import { colors, fonts, spacing, radius, elevation } from '@/constants/theme';
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
 import Waveform from '@/components/health/Waveform';
@@ -27,12 +37,12 @@ const VOICE_PROMPT =
 const SUB_SCORE_CONFIG: Array<{
   key: keyof VoiceAnalyzeResponse['sub_scores'];
   label: string;
-  icon: React.ComponentProps<typeof Ionicons>['name'];
+  icon: LucideIcon;
 }> = [
-    { key: 'energy', label: 'Energy', icon: 'flash' },
-    { key: 'stress', label: 'Stress', icon: 'fitness' },
-    { key: 'cardiac_recovery', label: 'Heart', icon: 'heart' },
-    { key: 'respiratory', label: 'Breath', icon: 'medical' },
+    { key: 'energy', label: 'Energy', icon: Zap },
+    { key: 'stress', label: 'Stress', icon: Activity },
+    { key: 'cardiac_recovery', label: 'Heart', icon: Heart },
+    { key: 'respiratory', label: 'Breath', icon: Wind },
   ];
 
 function scoreColor(score: number): string {
@@ -96,11 +106,10 @@ export default function VoiceScreen() {
                     disabled={isRecording}
                     activeOpacity={0.8}
                   >
-                    <Ionicons
-                      name={isRecording ? 'stop' : 'mic'}
-                      size={48}
-                      color="#fff"
-                    />
+                    {(() => {
+                      const Icon = isRecording ? Square : Mic2;
+                      return <Icon size={48} color="#fff" />;
+                    })()}
                   </TouchableOpacity>
                 </View>
               </View>
@@ -123,7 +132,7 @@ export default function VoiceScreen() {
 
             {state === 'error' && errorMsg && (
               <View style={s.errorBox}>
-                <Ionicons name="alert-circle" size={18} color={colors.health.danger} />
+                <AlertCircle size={18} color={colors.health.danger} strokeWidth={2.5} />
                 <Text style={s.errorText}>{errorMsg}</Text>
               </View>
             )}
@@ -134,7 +143,7 @@ export default function VoiceScreen() {
         {isUploading && (
           <View style={s.analyzingSection}>
             <Animated.View style={{ transform: [{ rotate: spin }] }}>
-              <Ionicons name="sparkles" size={64} color={colors.primary} />
+              <Sparkles size={64} color={colors.primary} strokeWidth={1.5} />
             </Animated.View>
             <Text style={s.analyzingTitle}>Modeling Biomarkers...</Text>
             <Text style={s.analyzingSub}>Signal-to-noise check • Feature extraction</Text>
@@ -172,12 +181,12 @@ export default function VoiceScreen() {
 
             {/* Biomarker Grid */}
             <View style={s.biomarkerGrid}>
-              {SUB_SCORE_CONFIG.map(({ key, label, icon }) => {
+              {SUB_SCORE_CONFIG.map(({ key, label, icon: Icon }) => {
                 const score = result.sub_scores[key];
                 return (
                   <View key={key} style={[s.gridCard, elevation.float]}>
                     <View style={[s.iconBox, { backgroundColor: scoreColor(score) + '15' }]}>
-                      <Ionicons name={icon} size={18} color={scoreColor(score)} />
+                      <Icon size={18} color={scoreColor(score)} strokeWidth={2.2} />
                     </View>
                     <Text style={s.gridLabel}>{label}</Text>
                     <Text style={[s.gridValue, { color: scoreColor(score) }]}>{score}</Text>

@@ -13,7 +13,14 @@ import {
     TouchableOpacity, Image, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import {
+    History,
+    Camera,
+    ShoppingBasket,
+    AlertCircle,
+    AlertTriangle,
+    PieChart
+} from 'lucide-react-native';
 import { colors, fonts, spacing, radius, elevation } from '@/constants/theme';
 
 export default function NutritionScreen() {
@@ -37,7 +44,7 @@ export default function NutritionScreen() {
                     <Text style={s.subtitle}>Receipt & Food Scanner</Text>
                 </View>
                 <TouchableOpacity style={s.iconBtn}>
-                    <Ionicons name="time" size={20} color={colors.primary} />
+                    <History size={20} color={colors.primary} strokeWidth={2} />
                 </TouchableOpacity>
             </View>
 
@@ -49,7 +56,7 @@ export default function NutritionScreen() {
                 <View style={s.heroSection}>
                     <Animated.View style={[s.scanBtnContainer, { transform: [{ scale: pulseAnim }] }]}>
                         <TouchableOpacity style={[s.scanBtn, elevation.hero]}>
-                            <Ionicons name="camera" size={40} color="#fff" />
+                            <Camera size={40} color="#fff" strokeWidth={1.5} />
                             <Text style={s.scanBtnText}>Scan Bill</Text>
                         </TouchableOpacity>
                     </Animated.View>
@@ -62,7 +69,7 @@ export default function NutritionScreen() {
                 <Text style={s.sectionTitle}>Latest Analysis</Text>
                 <View style={[s.card, elevation.float]}>
                     <View style={s.cardHead}>
-                        <Ionicons name="basket" size={18} color={colors.secondary} />
+                        <ShoppingBasket size={18} color={colors.secondary} strokeWidth={2} />
                         <Text style={s.cardTitle}>Whole Foods Market</Text>
                         <Text style={s.timeText}>Today, 12:45</Text>
                     </View>
@@ -90,7 +97,7 @@ export default function NutritionScreen() {
                 <View style={s.grid}>
                     <View style={[s.alertCard, elevation.low, { borderColor: colors.health.danger + '30' }]}>
                         <View style={[s.alertIcon, { backgroundColor: colors.health.danger + '15' }]}>
-                            <Ionicons name="alert-circle" size={20} color={colors.health.danger} />
+                            <AlertCircle size={20} color={colors.health.danger} strokeWidth={2.5} />
                         </View>
                         <Text style={s.alertTitle}>Processed Ingredient</Text>
                         <Text style={s.alertDesc}>Stabilizers found in Yogurt.</Text>
@@ -98,7 +105,7 @@ export default function NutritionScreen() {
 
                     <View style={[s.alertCard, elevation.low, { borderColor: colors.health.warning + '30' }]}>
                         <View style={[s.alertIcon, { backgroundColor: colors.health.warning + '15' }]}>
-                            <Ionicons name="warning" size={20} color={colors.health.warning} />
+                            <AlertTriangle size={20} color={colors.health.warning} strokeWidth={2.5} />
                         </View>
                         <Text style={s.alertTitle}>High Sodium</Text>
                         <Text style={s.alertDesc}>Ribeye exceeds daily limit.</Text>
@@ -108,7 +115,7 @@ export default function NutritionScreen() {
                 {/* ── BUDGET INSIGHT (Sage Green) ── */}
                 <View style={[s.card, elevation.float]}>
                     <View style={s.cardHead}>
-                        <Ionicons name="pie-chart" size={18} color={colors.health.good} />
+                        <PieChart size={18} color={colors.health.good} strokeWidth={2} />
                         <Text style={s.cardTitle}>Budget Intelligence</Text>
                         <View style={s.savingsBadge}>
                             <Text style={s.savingsText}>-12% vs Avg</Text>

@@ -13,7 +13,14 @@ import {
   TouchableOpacity, Switch, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  ShieldCheck,
+  TrendingUp,
+  Rocket,
+  Wallet,
+  AlertCircle,
+  ArrowRight
+} from 'lucide-react-native';
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { colors, fonts, spacing, radius, elevation } from '@/constants/theme';
 import {
@@ -55,7 +62,7 @@ export default function FintechScreen() {
           </View>
           <View style={s.heroRight}>
             <View style={s.shieldCircle}>
-              <Ionicons name="shield-checkmark" size={32} color="#fff" />
+              <ShieldCheck size={32} color="#fff" strokeWidth={2.5} />
             </View>
           </View>
         </View>
@@ -69,7 +76,7 @@ export default function FintechScreen() {
               <Text style={s.cardHeadSub}>Next goal: 90 Health Score</Text>
             </View>
             <View style={[s.iconBox, { backgroundColor: colors.secondary + '20' }]}>
-              <Ionicons name="trending-up" size={20} color={colors.secondary} />
+              <TrendingUp size={20} color={colors.secondary} strokeWidth={2.5} />
             </View>
           </View>
 
@@ -85,7 +92,7 @@ export default function FintechScreen() {
         {/* ── GRID: GOAL & HSA ── */}
         <View style={s.grid}>
           <View style={[s.gridCard, elevation.float]}>
-            <Ionicons name="rocket" size={24} color={colors.accent} />
+            <Rocket size={24} color={colors.accent} strokeWidth={2} />
             <Text style={s.gridTitle}>Top Gear</Text>
             <Text style={s.gridDesc}>Save an extra</Text>
             <Text style={s.gridValue}>{fmtUSD(extraSavingPerMonth)}</Text>
@@ -94,7 +101,7 @@ export default function FintechScreen() {
 
           <View style={[s.gridCard, elevation.float]}>
             <View style={s.hsaActions}>
-              <Ionicons name="wallet" size={24} color={colors.primary} />
+              <Wallet size={24} color={colors.primary} strokeWidth={2} />
               <Switch
                 value={hsaEnabled}
                 onValueChange={setHsaEnabled}
@@ -147,13 +154,13 @@ export default function FintechScreen() {
         {/* ── ANOMALY ALERT (Soft Coral) ── */}
         <TouchableOpacity style={s.alert} activeOpacity={0.9}>
           <View style={s.alertIcon}>
-            <Ionicons name="alert-circle" size={24} color={colors.health.danger} />
+            <AlertCircle size={24} color={colors.health.danger} strokeWidth={2.5} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={s.alertTitle}>2 Anomalies Detected</Text>
             <Text style={s.alertDesc}>Unexpected billing patterns in recent claims.</Text>
           </View>
-          <Ionicons name="arrow-forward" size={18} color={colors.text.muted} />
+          <ArrowRight size={18} color={colors.text.muted} strokeWidth={2} />
         </TouchableOpacity>
 
         <View style={{ height: 100 }} />

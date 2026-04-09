@@ -9,25 +9,31 @@
  */
 
 import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  Home,
+  Mic2,
+  Dumbbell,
+  Activity,
+  Wallet,
+  LucideIcon
+} from 'lucide-react-native';
 import { View, Platform } from 'react-native';
 import { colors, spacing, radius, elevation, fonts } from '@/constants/theme';
 
-type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+
 
 interface TabConfig {
   name: string;
   title: string;
-  icon: IoniconName;
-  iconFocused: IoniconName;
+  icon: LucideIcon;
 }
 
 const TABS: TabConfig[] = [
-  { name: 'index', title: 'Home', icon: 'home-outline', iconFocused: 'home' },
-  { name: 'voice', title: 'Voice AI', icon: 'mic-outline', iconFocused: 'mic' },
-  { name: 'exercise', title: 'Active', icon: 'fitness-outline', iconFocused: 'fitness' },
-  { name: 'twin', title: 'Twin', icon: 'body-outline', iconFocused: 'body' },
-  { name: 'fintech', title: 'Fintech', icon: 'wallet-outline', iconFocused: 'wallet' },
+  { name: 'index', title: 'Home', icon: Home },
+  { name: 'voice', title: 'Voice AI', icon: Mic2 },
+  { name: 'exercise', title: 'Active', icon: Dumbbell },
+  { name: 'twin', title: 'Twin', icon: Activity },
+  { name: 'fintech', title: 'Fintech', icon: Wallet },
 ];
 
 export default function TabLayout() {
@@ -62,18 +68,18 @@ export default function TabLayout() {
         },
       }}
     >
-      {TABS.map(({ name, title, icon, iconFocused }) => (
+      {TABS.map(({ name, title, icon: Icon }) => (
         <Tabs.Screen
           key={name}
           name={name}
           options={{
             title,
-            tabBarIcon: ({ focused, color, size }) => (
+            tabBarIcon: ({ color, size }) => (
               <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons
-                  name={focused ? iconFocused : icon}
+                <Icon
                   size={size ?? 24}
                   color={color}
+                  strokeWidth={2}
                 />
               </View>
             ),

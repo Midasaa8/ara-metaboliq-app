@@ -13,7 +13,17 @@ import {
   ScrollView, Animated, Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  Play,
+  Square,
+  X,
+  CheckCircle2,
+  AlertCircle,
+  Dumbbell,
+  Trophy,
+  Activity,
+  LucideIcon
+} from 'lucide-react-native';
 import Svg, { Circle, Line } from 'react-native-svg';
 import { colors, fonts, spacing, radius, elevation } from '@/constants/theme';
 import { useRepCounter } from '@/hooks/useRepCounter';
@@ -27,14 +37,14 @@ const W = Dimensions.get('window').width;
 const EXERCISES: Array<{
   type: ExerciseType;
   label: string;
-  icon: any;
+  icon: LucideIcon;
   targetReps: number;
   muscles: string;
 }> = [
-    { type: 'push_up', label: 'Push Ups', icon: 'body', targetReps: 10, muscles: 'Chest • Shoulders • Triceps' },
-    { type: 'squat', label: 'Squats', icon: 'fitness', targetReps: 15, muscles: 'Quads • Glutes • Core' },
-    { type: 'bicep_curl', label: 'Bicep Curls', icon: 'barbell', targetReps: 12, muscles: 'Biceps • Forearms' },
-    { type: 'shoulder_press', label: 'Shoulder Press', icon: 'trophy', targetReps: 10, muscles: 'Shoulders • Triceps • Core' },
+    { type: 'push_up', label: 'Push Ups', icon: Activity, targetReps: 10, muscles: 'Chest • Shoulders • Triceps' },
+    { type: 'squat', label: 'Squats', icon: Dumbbell, targetReps: 15, muscles: 'Quads • Glutes • Core' },
+    { type: 'bicep_curl', label: 'Bicep Curls', icon: Dumbbell, targetReps: 12, muscles: 'Biceps • Forearms' },
+    { type: 'shoulder_press', label: 'Shoulder Press', icon: Trophy, targetReps: 10, muscles: 'Shoulders • Triceps • Core' },
   ];
 
 type ScreenState = 'pick' | 'tracking' | 'result';
@@ -121,7 +131,7 @@ export default function ExerciseScreen() {
                 onPress={() => selectAndStart(ex)}
               >
                 <View style={[s.exIcon, { backgroundColor: colors.secondary + '15' }]}>
-                  <Ionicons name={ex.icon as any} size={24} color={colors.secondary} />
+                  <ex.icon size={24} color={colors.secondary} strokeWidth={2} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={s.exLabel}>{ex.label}</Text>
@@ -152,23 +162,26 @@ export default function ExerciseScreen() {
             <View style={s.controlRow}>
               {!repCounter.isRunning ? (
                 <TouchableOpacity style={[s.primaryBtn, elevation.warmGlow]} onPress={repCounter.start}>
-                  <Ionicons name="play" size={20} color="#fff" />
+                  <Play size={20} color="#fff" strokeWidth={2.5} fill="#fff" />
                   <Text style={s.btnText}>Start Now</Text>
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity style={s.stopBtn} onPress={repCounter.stop}>
-                  <Ionicons name="stop" size={20} color={colors.health.danger} />
+                  <Square size={20} color={colors.health.danger} strokeWidth={2.5} fill={colors.health.danger} />
                   <Text style={[s.btnText, { color: colors.health.danger }]}>Stop</Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity style={s.cancelBtn} onPress={resetAll}>
-                <Ionicons name="close" size={24} color={colors.text.secondary} />
+                <X size={24} color={colors.text.secondary} strokeWidth={2.5} />
               </TouchableOpacity>
             </View>
 
             <View style={s.feedbackCard}>
               <View style={[s.feedbackIcon, { backgroundColor: repCounter.feedback.severity === 'good' ? colors.health.good + '20' : colors.health.warning + '20' }]}>
-                <Ionicons name={repCounter.feedback.severity === 'good' ? 'checkmark-circle' : 'alert-circle'} size={24} color={repCounter.feedback.severity === 'good' ? colors.health.good : colors.health.warning} />
+                {repCounter.feedback.severity === 'good'
+                  ? <CheckCircle2 size={24} color={colors.health.good} strokeWidth={2.5} />
+                  : <AlertCircle size={24} color={colors.health.warning} strokeWidth={2.5} />
+                }
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={s.feedbackLabel}>FORM FEEDBACK</Text>

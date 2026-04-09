@@ -14,7 +14,20 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  Heart,
+  Droplets,
+  Thermometer,
+  Activity,
+  Mic2,
+  Dumbbell,
+  User,
+  ShieldCheck,
+  Cpu,
+  ChevronRight,
+  Moon,
+  Salad
+} from 'lucide-react-native';
 
 import { HealthScoreRing } from '@/components/health/HealthScoreRing';
 import { PPGWaveform } from '@/components/health/PPGWaveform';
@@ -96,16 +109,16 @@ export default function HomeScreen() {
         {/* ── LIVE VITALS (floating pills) ── */}
         {latestReading && (
           <View style={s.vitalsRow}>
-            <VitalPill icon="heart" value={`${latestReading.hr}`} unit="bpm" color={colors.health.danger} />
-            <VitalPill icon="water" value={`${latestReading.spo2}`} unit="SpO₂" color={colors.primary} />
-            <VitalPill icon="thermometer" value={`${latestReading.temperature.toFixed(1)}`} unit="°C" color={colors.accent} />
+            <VitalPill icon={Heart} value={`${latestReading.hr}`} unit="bpm" color={colors.health.danger} />
+            <VitalPill icon={Droplets} value={`${latestReading.spo2}`} unit="SpO₂" color={colors.primary} />
+            <VitalPill icon={Thermometer} value={`${latestReading.temperature.toFixed(1)}`} unit="°C" color={colors.accent} />
           </View>
         )}
 
         {/* ── LIVE PPG (floating card) ── */}
         <View style={s.card}>
           <View style={s.cardHead}>
-            <Ionicons name="pulse" size={16} color={colors.primary} />
+            <Activity size={16} color={colors.primary} strokeWidth={2.5} />
             <Text style={s.cardTitle}>Live Biosignal</Text>
             <View style={[s.liveDot, isConnected && s.liveDotOn]} />
           </View>
@@ -116,22 +129,22 @@ export default function HomeScreen() {
         <Text style={s.sectionTitle}>Wellness Actions</Text>
         <View style={s.actionGrid}>
           <WellnessCard
-            icon="mic" label="Voice" sub="5s check-in"
+            icon={Mic2} label="Voice" sub="5s check-in"
             bgColor="#EBF4FF" iconColor={colors.primary}
             onPress={() => router.push('/(tabs)/voice')}
           />
           <WellnessCard
-            icon="fitness" label="Exercise" sub="Track workout"
+            icon={Dumbbell} label="Exercise" sub="Track workout"
             bgColor="#E8F5EC" iconColor={colors.secondary}
             onPress={() => router.push('/(tabs)/exercise')}
           />
           <WellnessCard
-            icon="body" label="Digital Twin" sub="Body insights"
+            icon={User} label="Digital Twin" sub="Body insights"
             bgColor="#F0ECFB" iconColor="#8B78D0"
             onPress={() => router.push('/(tabs)/twin')}
           />
           <WellnessCard
-            icon="shield-checkmark" label="Insurance" sub="HSA savings"
+            icon={ShieldCheck} label="Insurance" sub="HSA savings"
             bgColor="#FFF4ED" iconColor={colors.accent}
             onPress={() => router.push('/(tabs)/fintech')}
           />
@@ -140,14 +153,17 @@ export default function HomeScreen() {
         {/* ── HEALTH DIMENSIONS (floating card) ── */}
         <Text style={s.sectionTitle}>Health Dimensions</Text>
         <View style={s.card}>
-          {(['exercise', 'sleep', 'voice', 'discipline'] as const).map((key, i) => {
+          {(['exercise', 'sleep', 'voice', 'nutrition', 'discipline'] as const).map((key, i) => {
             const meta = SUB_SCORE_META[key];
             const val = subScores?.[key] ?? 0;
             return (
               <View key={key} style={[s.dimRow, i > 0 && { marginTop: 14 }]}>
                 <View style={s.dimLeft}>
                   <View style={[s.dimIcon, { backgroundColor: colors.primary + '15' }]}>
-                    <Ionicons name={meta.icon as any} size={12} color={colors.primary} />
+                    {(() => {
+                      const Icon = key === 'exercise' ? Dumbbell : key === 'sleep' ? Moon : key === 'voice' ? Mic2 : key === 'nutrition' ? Salad : ShieldCheck;
+                      return <Icon size={12} color={colors.primary} strokeWidth={2.5} />;
+                    })()}
                   </View>
                   <Text style={s.dimLabel}>{meta.label}</Text>
                 </View>
@@ -170,13 +186,13 @@ export default function HomeScreen() {
         {!isConnected && (
           <TouchableOpacity style={s.nudge} onPress={() => router.push('/patch-connect')}>
             <View style={s.nudgeIconBox}>
-              <Ionicons name="hardware-chip-outline" size={20} color={colors.accent} />
+              <Cpu size={20} color={colors.accent} strokeWidth={2} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={s.nudgeTitle}>Connect ARA Pod</Text>
               <Text style={s.nudgeSub}>Real-time biometrics via BLE</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.accent} />
+            <ChevronRight size={18} color={colors.accent} strokeWidth={2.5} />
           </TouchableOpacity>
         )}
 
@@ -188,24 +204,24 @@ export default function HomeScreen() {
 
 // ── Inline Sub-components ────────────────────────────────────────────────────
 
-function VitalPill({ icon, value, unit, color }: { icon: any; value: string; unit: string; color: string }) {
+function VitalPill({ icon: Icon, value, unit, color }: { icon: any; value: string; unit: string; color: string }) {
   return (
     <View style={[s.vitalPill, elevation.low]}>
-      <Ionicons name={icon} size={14} color={color} />
+      <Icon size={14} color={color} strokeWidth={3} />
       <Text style={[s.vitalVal, { color }]}>{value}</Text>
       <Text style={s.vitalUnit}>{unit}</Text>
     </View>
   );
 }
 
-function WellnessCard({ icon, label, sub, bgColor, iconColor, onPress }: {
+function WellnessCard({ icon: Icon, label, sub, bgColor, iconColor, onPress }: {
   icon: any; label: string; sub: string;
   bgColor: string; iconColor: string; onPress: () => void;
 }) {
   return (
     <TouchableOpacity style={[s.wellnessCard, elevation.float]} onPress={onPress} activeOpacity={0.85}>
       <View style={[s.wellnessIcon, { backgroundColor: bgColor }]}>
-        <Ionicons name={icon} size={22} color={iconColor} />
+        <Icon size={22} color={iconColor} strokeWidth={2} />
       </View>
       <Text style={s.wellnessLabel}>{label}</Text>
       <Text style={s.wellnessSub}>{sub}</Text>

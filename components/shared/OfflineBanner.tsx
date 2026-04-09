@@ -9,7 +9,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { CloudOff } from 'lucide-react-native';
 import { colors, fonts, spacing, radius } from '@/constants/theme';
 
 export function OfflineBanner() {
@@ -45,7 +45,7 @@ export function OfflineBanner() {
 
     return (
         <Animated.View style={[s.banner, { transform: [{ translateY: slideAnim }] }]}>
-            <Ionicons name="cloud-offline" size={16} color={colors.health.warning} />
+            <CloudOff size={16} color={colors.health.warning} strokeWidth={2.5} />
             <Text style={s.text}>No internet connection</Text>
         </Animated.View>
     );
