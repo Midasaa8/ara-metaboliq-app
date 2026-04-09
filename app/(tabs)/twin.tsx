@@ -23,10 +23,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
-import { colors, fonts, spacing, radius } from '@/constants/theme';
+import { colors, fonts, spacing, radius, elevation } from '@/constants/theme';
 import { useSleepData } from '@/hooks/useSleepData';
 
-// ── Helper: phút → "Xh Ym" ──
+// Helper: minutes → "Xh Ym"
 function fmtMin(min: number): string {
   const h = Math.floor(min / 60);
   const m = min % 60;

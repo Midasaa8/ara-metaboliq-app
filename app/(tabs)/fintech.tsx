@@ -23,7 +23,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
-import { colors, fonts, spacing, radius } from '@/constants/theme';
+import { colors, fonts, spacing, radius, elevation } from '@/constants/theme';
 import {
   useInsurance,
   getDiscountBarPct,
