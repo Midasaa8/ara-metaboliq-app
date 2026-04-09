@@ -10,7 +10,8 @@
 
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/constants/theme';
+import { View, Platform } from 'react-native';
+import { colors, spacing, radius, elevation, fonts } from '@/constants/theme';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -24,9 +25,9 @@ interface TabConfig {
 const TABS: TabConfig[] = [
   { name: 'index', title: 'Home', icon: 'home-outline', iconFocused: 'home' },
   { name: 'voice', title: 'Voice AI', icon: 'mic-outline', iconFocused: 'mic' },
-  { name: 'exercise', title: 'Exercise', icon: 'fitness-outline', iconFocused: 'fitness' },
+  { name: 'exercise', title: 'Active', icon: 'fitness-outline', iconFocused: 'fitness' },
   { name: 'twin', title: 'Twin', icon: 'body-outline', iconFocused: 'body' },
-  { name: 'fintech', title: 'Finance', icon: 'wallet-outline', iconFocused: 'wallet' },
+  { name: 'fintech', title: 'Fintech', icon: 'wallet-outline', iconFocused: 'wallet' },
 ];
 
 export default function TabLayout() {
@@ -36,20 +37,28 @@ export default function TabLayout() {
         headerShown: false,
         lazy: true,
         tabBarStyle: {
-          backgroundColor: colors.surface,   // Space Grey #1C1C1E
-          borderTopColor: colors.border,
-          borderTopWidth: 0.5,
-          elevation: 0,
-          shadowOpacity: 0,
-          height: 60,
-          paddingBottom: 8,
+          backgroundColor: colors.surface,
+          borderTopWidth: 0,
+          elevation: elevation.float.elevation,
+          shadowColor: elevation.float.shadowColor,
+          shadowOffset: elevation.float.shadowOffset,
+          shadowOpacity: elevation.float.shadowOpacity,
+          shadowRadius: elevation.float.shadowRadius,
+          height: Platform.OS === 'ios' ? 88 : 68,
+          position: 'absolute',
+          bottom: spacing.md,
+          left: spacing.lg,
+          right: spacing.lg,
+          borderRadius: radius.md,
+          paddingBottom: Platform.OS === 'ios' ? 28 : 12,
+          paddingTop: 12,
         },
-        tabBarActiveTintColor: colors.primary,        // Signal Purple
-        tabBarInactiveTintColor: colors.text.muted,     // Dim grey
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.text.muted,
         tabBarLabelStyle: {
           fontSize: 10,
-          fontWeight: '500',
-          marginTop: -2,
+          fontFamily: fonts.medium,
+          fontWeight: '600',
         },
       }}
     >
@@ -60,16 +69,17 @@ export default function TabLayout() {
           options={{
             title,
             tabBarIcon: ({ focused, color, size }) => (
-              <Ionicons
-                name={focused ? iconFocused : icon}
-                size={size ?? 22}
-                color={color}
-              />
+              <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons
+                  name={focused ? iconFocused : icon}
+                  size={size ?? 24}
+                  color={color}
+                />
+              </View>
             ),
           }}
         />
       ))}
-      {/* nutrition is a sub-screen inside (tabs)/ folder but NOT a visible tab */}
       <Tabs.Screen
         name="nutrition"
         options={{ href: null, headerShown: false }}
