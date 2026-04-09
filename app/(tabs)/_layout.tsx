@@ -69,6 +69,11 @@ export default function TabLayout() {
           }}
         />
       ))}
+      {/* nutrition is a sub-screen inside (tabs)/ folder but NOT a visible tab */}
+      <Tabs.Screen
+        name="nutrition"
+        options={{ href: null, headerShown: false }}
+      />
     </Tabs>
   );
 }
