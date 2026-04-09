@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { HealthScoreRing } from '@/components/health/HealthScoreRing';
 import { VitalCard } from '@/components/health/VitalCard';
+import { PPGWaveform } from '@/components/health/PPGWaveform';
 import { useHealthScore } from '@/hooks/useHealthScore';
 import { usePatchConnection } from '@/hooks/usePatchConnection';
 import { useUserStore } from '@/store/userStore';
@@ -106,6 +107,9 @@ export default function HomeScreen() {
           </View>
         )}
 
+        {/* ── Live PPG Waveform (Phase 10) ── */}
+        <PPGWaveform hr={latestReading?.hr ?? 72} isConnected={isConnected} />
+
         {/* ── Quick Actions ── */}
         <View style={styles.actionsSection}>
           <Text style={styles.sectionTitle}>⚡ Hành động nhanh</Text>
@@ -130,14 +134,15 @@ export default function HomeScreen() {
         </View>
 
         {/* ── Patch status ── */}
-        <View style={styles.patchRow}>
+        <View style={[styles.patchRow, isConnected && styles.patchRowConnected]}>
+          <View style={[styles.patchDot, { backgroundColor: isConnected ? colors.health.good : colors.text.muted }]} />
           <Ionicons
-            name={isConnected ? 'hardware-chip-outline' : 'hardware-chip-outline'}
+            name="hardware-chip-outline"
             size={14}
             color={isConnected ? colors.health.good : colors.text.muted}
           />
           <Text style={[styles.patchLabel, { color: isConnected ? colors.health.good : colors.text.muted }]}>
-            {isConnected ? 'ARA Pod · DEMO MODE' : 'Pod chưa kết nối'}
+            {isConnected ? 'ARA Pod · DEMO MODE · 25 Hz' : 'Pod chưa kết nối'}
           </Text>
         </View>
       </ScrollView>
@@ -267,8 +272,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     marginTop: spacing.lg,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
+    alignSelf: 'center',
   },
-  patchLabel: { fontSize: fonts.sizes.xs, fontWeight: '500' },
+  patchRowConnected: {
+    backgroundColor: colors.health.good + '15',
+    borderWidth: 1,
+    borderColor: colors.health.good + '40',
+  },
+  patchDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  patchLabel: { fontSize: fonts.sizes.xs, fontWeight: '600' },
 });
 
 
