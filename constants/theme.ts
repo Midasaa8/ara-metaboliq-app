@@ -113,9 +113,10 @@ export const radius = {
 
 // ── TYPOGRAPHY ──
 export const fonts = {
-  regular: 'System',
-  medium: 'System',
-  bold: 'System',
+  regular: 'Outfit_400Regular',
+  medium: 'Outfit_600SemiBold',
+  bold: 'Outfit_700Bold',
+  black: 'Outfit_900Black',
   sizes: { xs: 10, sm: 12, md: 14, lg: 16, xl: 20, xxl: 28, hero: 48 },
 } as const;
 

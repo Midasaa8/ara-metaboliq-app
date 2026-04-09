@@ -9,7 +9,7 @@
 
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { AlertCircle, RefreshCcw } from 'lucide-react-native';
 import { colors, fonts, spacing, radius, elevation } from '@/constants/theme';
 
 interface Props {
@@ -44,7 +44,7 @@ export class ErrorBoundary extends Component<Props, State> {
         <View style={s.container}>
           <View style={s.card}>
             <View style={s.iconWrap}>
-              <Ionicons name="cloud-offline-outline" size={48} color={colors.accent} />
+              <AlertCircle size={48} color={colors.accent} strokeWidth={1.5} />
             </View>
             <Text style={s.title}>Something went wrong</Text>
             <Text style={s.message}>
@@ -59,7 +59,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </View>
             )}
             <TouchableOpacity style={s.retryBtn} onPress={this.handleRetry} activeOpacity={0.85}>
-              <Ionicons name="refresh" size={18} color="#fff" />
+              <RefreshCcw size={18} color="#fff" strokeWidth={2.5} />
               <Text style={s.retryText}>Try Again</Text>
             </TouchableOpacity>
           </View>

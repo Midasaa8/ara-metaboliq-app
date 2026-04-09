@@ -13,7 +13,17 @@ import {
   TouchableOpacity, ActivityIndicator, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  RefreshCcw,
+  Dna,
+  TrendingDown,
+  Moon,
+  Sparkles,
+  ChevronRight,
+  Heart,
+  Activity,
+  Play
+} from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
 import { colors, fonts, spacing, radius, elevation } from '@/constants/theme';
 import { useSleepData } from '@/hooks/useSleepData';
@@ -58,7 +68,7 @@ export default function TwinScreen() {
           <Text style={s.subtitle}>Biological Age & Sleep State</Text>
         </View>
         <TouchableOpacity style={s.refreshBtn} onPress={refetch}>
-          <Ionicons name="refresh" size={20} color={colors.primary} />
+          <RefreshCcw size={20} color={colors.primary} strokeWidth={2} />
         </TouchableOpacity>
       </View>
 
@@ -76,7 +86,7 @@ export default function TwinScreen() {
           <View style={[s.heroCard, elevation.raised]}>
             <View style={s.heroLeft}>
               <View style={s.avatarCircle}>
-                <Ionicons name="body" size={48} color={colors.secondary} />
+                <Dna size={48} color={colors.secondary} strokeWidth={1.5} />
                 <Animated.View style={[s.glowRing, { opacity: glowAnim, transform: [{ scale: glowAnim }] }]} />
               </View>
             </View>
@@ -84,7 +94,7 @@ export default function TwinScreen() {
               <Text style={s.heroLabel}>BIOLOGICAL AGE</Text>
               <Text style={s.heroAge}>{data.bio_age} yrs</Text>
               <View style={s.trendPill}>
-                <Ionicons name="caret-down" size={12} color={colors.health.good} />
+                <TrendingDown size={12} color={colors.health.good} strokeWidth={2.5} />
                 <Text style={s.trendText}>2 years younger than actual</Text>
               </View>
             </View>
@@ -94,7 +104,7 @@ export default function TwinScreen() {
           <Text style={s.sectionTitle}>Sleep Cycles</Text>
           <View style={[s.card, elevation.float]}>
             <View style={s.cardHead}>
-              <Ionicons name="moon" size={18} color={colors.primary} />
+              <Moon size={18} color={colors.primary} strokeWidth={2} />
               <Text style={s.cardTitle}>Last Night's Analysis</Text>
               <Text style={s.totalTime}>{fmtMin(data.totalMin)}</Text>
             </View>
@@ -117,7 +127,7 @@ export default function TwinScreen() {
           {/* ── CHRONOOS PREDICTION (Peach Accent) ── */}
           <TouchableOpacity style={[s.chronoCard, elevation.float]} activeOpacity={0.9}>
             <View style={s.chronoIconBox}>
-              <Ionicons name="sparkles" size={20} color={colors.accent} />
+              <Sparkles size={20} color={colors.accent} strokeWidth={2} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={s.chronoTitle}>ChronoOS Forecast</Text>
@@ -126,7 +136,7 @@ export default function TwinScreen() {
                 health readiness for tomorrow morning.
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.accent} />
+            <ChevronRight size={18} color={colors.accent} strokeWidth={2.5} />
           </TouchableOpacity>
 
           {/* ── HRV & VITALS REPLAY ── */}
@@ -145,7 +155,7 @@ export default function TwinScreen() {
               <Text style={s.gridLabel}>RESTING HR</Text>
               <Text style={s.gridValue}>58<Text style={s.gridUnit}>bpm</Text></Text>
               <View style={[s.iconCircle, { backgroundColor: colors.health.danger + '10' }]}>
-                <Ionicons name="heart" size={20} color={colors.health.danger} />
+                <Heart size={20} color={colors.health.danger} strokeWidth={2} />
               </View>
             </View>
           </View>
@@ -153,10 +163,10 @@ export default function TwinScreen() {
           {/* ── VITALS REPLAY SVG ── */}
           <View style={[s.card, elevation.float]}>
             <View style={s.cardHead}>
-              <Ionicons name="pulse" size={18} color={colors.secondary} />
+              <Activity size={18} color={colors.secondary} strokeWidth={2.5} />
               <Text style={s.cardTitle}>Vitals Replay</Text>
               <TouchableOpacity style={s.playBtn}>
-                <Ionicons name="play" size={14} color="#fff" />
+                <Play size={14} color="#fff" strokeWidth={3} fill="#fff" />
               </TouchableOpacity>
             </View>
             <View style={s.svgWrap}>

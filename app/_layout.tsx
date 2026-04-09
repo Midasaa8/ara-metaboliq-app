@@ -12,6 +12,13 @@ import { View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as SplashScreen from 'expo-splash-screen';
+import {
+  useFonts,
+  Outfit_400Regular,
+  Outfit_600SemiBold,
+  Outfit_700Bold,
+  Outfit_900Black
+} from '@expo-google-fonts/outfit';
 import { ThemeProvider } from '@/hooks/useTheme';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { OfflineBanner } from '@/components/shared/OfflineBanner';
@@ -51,25 +58,31 @@ function AuthGuard() {
 
 export default function RootLayout() {
   const [appReady, setAppReady] = useState(false);
+  const [fontsLoaded] = useFonts({
+    Outfit_400Regular,
+    Outfit_600SemiBold,
+    Outfit_700Bold,
+    Outfit_900Black,
+  });
 
   useEffect(() => {
     async function prepare() {
-      try {
-        // Seed demo data for hackathon (IS_HACKATHON=true)
-        DemoDataSeeder.activate();
-        // Fonts: using system fonts for hackathon (Inter/SpaceGrotesk not bundled yet)
-        // Phase 24: add proper font asset files and load them here
-        await SplashScreen.hideAsync();
-      } catch (e) {
-        // Ignore
-      } finally {
-        setAppReady(true);
+      if (fontsLoaded) {
+        try {
+          // Seed demo data for hackathon (IS_HACKATHON=true)
+          DemoDataSeeder.activate();
+          await SplashScreen.hideAsync();
+        } catch (e) {
+          // Ignore
+        } finally {
+          setAppReady(true);
+        }
       }
     }
     prepare();
-  }, []);
+  }, [fontsLoaded]);
 
-  if (!appReady) return null;
+  if (!appReady || !fontsLoaded) return null;
 
   return (
     <ThemeProvider>
