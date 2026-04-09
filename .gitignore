@@ -39,3 +39,8 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# AI phase instruction files
+GEMINI_PHASES.md
+SONNET_PHASES.md
+OPUS_PHASES.md
