@@ -20,13 +20,13 @@ import { useUserStore } from '@/store/userStore';
 import { colors, fonts, spacing, radius } from '@/constants/theme';
 
 export default function OnboardingScreen() {
-  const router        = useRouter();
-  const setTokens     = useSessionStore((s) => s.setTokens);
-  const setProfile    = useUserStore((s) => s.setProfile);
+  const router = useRouter();
+  const setTokens = useSessionStore((s) => s.setTokens);
+  const setProfile = useUserStore((s) => s.setProfile);
   const setIsOnboarded = useUserStore((s) => s.setIsOnboarded);
 
-  const [name,   setName]   = useState('');
-  const [age,    setAge]    = useState('');
+  const [name, setName] = useState('');
+  const [age, setAge] = useState('');
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
 
@@ -36,14 +36,14 @@ export default function OnboardingScreen() {
     // TODO: HACKATHON — replace with real POST /auth/login in Phase 19
     // For now: mock tokens so AuthGuard lets user into tabs
     setProfile({
-      id:        'user-mock-001',
-      email:     'user@ara-metaboliq.app',
-      fullName:  name.trim(),
-      age:       parseInt(age) || 25,
-      gender:    'other',
-      heightCm:  parseFloat(height) || 170,
-      weightKg:  parseFloat(weight) || 65,
-      timezone:  Intl.DateTimeFormat().resolvedOptions().timeZone,
+      id: 'user-mock-001',
+      email: 'user@ara-metaboliq.app',
+      fullName: name.trim(),
+      age: parseInt(age) || 25,
+      gender: 'other',
+      heightCm: parseFloat(height) || 170,
+      weightKg: parseFloat(weight) || 65,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     });
     setTokens('mock-access-token', 'mock-refresh-token');
     setIsOnboarded(true);
@@ -128,35 +128,35 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container:   { flex: 1, backgroundColor: colors.background },
-  inner:       { flex: 1 },
-  scroll:      { flexGrow: 1, justifyContent: 'center', padding: spacing.xl },
-  hero:        { alignItems: 'center', marginBottom: spacing.xxl },
-  logo:        { color: colors.primary, fontSize: 52, fontWeight: '900', letterSpacing: 4 },
-  logoSub:     { color: colors.tertiary, fontSize: fonts.sizes.xl, fontWeight: '600', marginTop: -8 },
-  tagline:     { color: colors.text.secondary, fontSize: fonts.sizes.md, textAlign: 'center', marginTop: spacing.md, lineHeight: 22 },
-  form:        { gap: spacing.md },
-  formTitle:   { color: colors.text.primary, fontSize: fonts.sizes.lg, fontWeight: '600', marginBottom: spacing.xs },
+  container: { flex: 1, backgroundColor: colors.background },
+  inner: { flex: 1 },
+  scroll: { flexGrow: 1, justifyContent: 'center', padding: spacing.xl },
+  hero: { alignItems: 'center', marginBottom: spacing.xxl },
+  logo: { color: colors.primary, fontSize: 52, fontWeight: '900', letterSpacing: 4 },
+  logoSub: { color: colors.accent, fontSize: fonts.sizes.xl, fontWeight: '600', marginTop: -8 },
+  tagline: { color: colors.text.secondary, fontSize: fonts.sizes.md, textAlign: 'center', marginTop: spacing.md, lineHeight: 22 },
+  form: { gap: spacing.md },
+  formTitle: { color: colors.text.primary, fontSize: fonts.sizes.lg, fontWeight: '600', marginBottom: spacing.xs },
   input: {
-    backgroundColor:  colors.surfaceElevated,
-    borderRadius:     radius.md,
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: radius.md,
     paddingHorizontal: spacing.md,
-    paddingVertical:  spacing.sm + 4,
-    color:            colors.text.primary,
-    fontSize:         fonts.sizes.md,
-    borderWidth:      1,
-    borderColor:      colors.border,
+    paddingVertical: spacing.sm + 4,
+    color: colors.text.primary,
+    fontSize: fonts.sizes.md,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  row:         { flexDirection: 'row', gap: spacing.sm },
-  inputHalf:   { flex: 1 },
+  row: { flexDirection: 'row', gap: spacing.sm },
+  inputHalf: { flex: 1 },
   btn: {
     backgroundColor: colors.primary,
-    borderRadius:    radius.md,
+    borderRadius: radius.md,
     paddingVertical: spacing.md,
-    alignItems:      'center',
-    marginTop:       spacing.sm,
+    alignItems: 'center',
+    marginTop: spacing.sm,
   },
   btnDisabled: { opacity: 0.4 },
-  btnText:     { color: colors.text.primary, fontSize: fonts.sizes.lg, fontWeight: '700' },
+  btnText: { color: colors.text.primary, fontSize: fonts.sizes.lg, fontWeight: '700' },
 });
 

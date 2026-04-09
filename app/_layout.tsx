@@ -14,6 +14,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as SplashScreen from 'expo-splash-screen';
 import { ThemeProvider } from '@/hooks/useTheme';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
+import { OfflineBanner } from '@/components/shared/OfflineBanner';
 import { DemoDataSeeder } from '@/services/demo/DemoDataSeeder';
 import { initAPIClient } from '@/services/api/APIClient';
 import { buildTokenStore, useSessionStore } from '@/store/sessionStore';
@@ -74,6 +75,7 @@ export default function RootLayout() {
     <ThemeProvider>
       <ErrorBoundary screenName="Root">
         <View style={{ flex: 1 }}>
+          <OfflineBanner />
           <QueryClientProvider client={queryClient}>
             <AuthGuard />
             <Stack screenOptions={{ headerShown: false }}>

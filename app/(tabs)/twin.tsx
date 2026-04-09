@@ -1,24 +1,16 @@
 /**
- * PART:   Digital Twin / Sleep Screen
- * ACTOR:  Claude Sonnet 4.6 + Gemini 3.1
- * PHASE:  6 — Sleep Tracker
- * READS:  AGENTS.md §7, PLAN_B §6 Sleep Tracker, SONNET_PHASES.md §PHASE 6,
- *         GEMINI_PHASES.md §PHASE 6 UI elements
- * TASK:   Sleep timeline, HRV (SDNN), ChronoOS prediction, Digital Twin bio age,
- *         mini PPG waveform replay
- * SCOPE:  IN: UI, useSleepData hook, hiển thị kết quả
- *         OUT: LSTM inference (Opus Phase 18), HRV computation (server Phase 13)
+ * PART:   Digital Twin / Sleep Screen — Wellness Redesign
+ * ACTOR:  Gemini 3.1
+ * PHASE:  UI Redesign — Floating Cards
+ * TASK:   Premium sleep & bio-twin analysis with Ivory bg and Sage Green theme
+ * SCOPE:  IN: UI, useSleepData hook, floating cardio cards
+ *         OUT: HRV computation (server)
  */
 
 import { useRef, useEffect, useMemo } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  Animated,
+  View, Text, StyleSheet, ScrollView,
+  TouchableOpacity, ActivityIndicator, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,7 +18,6 @@ import Svg, { Path } from 'react-native-svg';
 import { colors, fonts, spacing, radius, elevation } from '@/constants/theme';
 import { useSleepData } from '@/hooks/useSleepData';
 
-// Helper: minutes → "Xh Ym"
 function fmtMin(min: number): string {
   const h = Math.floor(min / 60);
   const m = min % 60;
@@ -35,309 +26,251 @@ function fmtMin(min: number): string {
   return `${h}h ${m}m`;
 }
 
-// ── Mini PPG waveform (SVG sin-wave giả lập cho "Vitals Replay") ──
-function MiniPPGWave() {
-  const WAVE_W = 400;
-  const WAVE_H = 100;
-  const points: string[] = [];
-  for (let x = 0; x <= WAVE_W; x += 3) {
-    const y = WAVE_H / 2 - 14 * Math.sin((x / WAVE_W) * 12 * Math.PI)
-      - 5 * Math.sin((x / WAVE_W) * 24 * Math.PI + 0.5);
-    points.push(`${x === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`);
-  }
-  const d = points.join(' ');
-
-  return (
-    <View style={styles.ppgCard}>
-      <View style={styles.ppgHeader}>
-        <View>
-          <Text style={styles.ppgTitle}>Vitals Replay</Text>
-          <Text style={styles.ppgSubtitle}>PPG Waveform • 03:24 AM</Text>
-        </View>
-        <TouchableOpacity style={styles.ppgPlayBtn} activeOpacity={0.8}>
-          <Ionicons name="play" size={20} color={colors.secondary} />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.ppgSvgWrapper}>
-        <Svg width="100%" height={WAVE_H} viewBox={`0 0 ${WAVE_W} ${WAVE_H}`} preserveAspectRatio="none">
-          <Path d={d} stroke={colors.primary} strokeWidth={2.5} fill="none" opacity={0.85} />
-        </Svg>
-        <View style={styles.ppgCursorLine} />
-      </View>
-    </View>
-  );
-}
-
-// ── HRV Animated Bars ──
-function HRVCard({ hrvValue }: { hrvValue: number }) {
-  // Mock 6 cột height percentage cho HRV History bar chart
-  const bars = [40, 60, 80, 100, 70, 50];
-
-  return (
-    <View style={styles.hrvCard}>
-      <View>
-        <Text style={styles.hrvLabel}>HRV (SDNN)</Text>
-        <Text style={styles.hrvValue}>
-          {hrvValue}<Text style={styles.hrvUnit}>ms</Text>
-        </Text>
-      </View>
-      <View style={styles.hrvGraphWrap}>
-        {bars.map((h, i) => (
-          <View key={i} style={[styles.hrvBar, { height: `${h}%`, opacity: 0.2 + (h / 100) * 0.8 }]} />
-        ))}
-      </View>
-    </View>
-  );
-}
-
-// ── Main Screen ──
 export default function TwinScreen() {
   const { data, isLoading, refetch } = useSleepData();
 
-  // Animations
   const glowAnim = useRef(new Animated.Value(0.8)).current;
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(glowAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
-        Animated.timing(glowAnim, { toValue: 0.8, duration: 2000, useNativeDriver: true }),
+        Animated.timing(glowAnim, { toValue: 1, duration: 2500, useNativeDriver: true }),
+        Animated.timing(glowAnim, { toValue: 0.8, duration: 2500, useNativeDriver: true }),
       ])
     ).start();
   }, [glowAnim]);
 
-  // Derived metrics
-  const { lightMin, remMin, deepMin, awakeMin, lightPct, remPct, deepPct, awakePct } = useMemo(() => {
-    if (!data) return { lightMin: 0, remMin: 0, deepMin: 0, awakeMin: 0, lightPct: 0, remPct: 0, deepPct: 0, awakePct: 0 };
+  const { lightPct, remPct, deepPct, awakePct } = useMemo(() => {
+    if (!data) return { lightPct: 0, remPct: 0, deepPct: 0, awakePct: 0 };
     const getM = (sName: string) => data.stages.filter(s => s.stage === sName).reduce((a, b) => a + b.durationMin, 0);
     const l = getM('Light'), r = getM('REM'), d = getM('Deep'), a = getM('Awake');
     const tot = data.totalMin || 1;
     return {
-      lightMin: l, remMin: r, deepMin: d, awakeMin: a,
       lightPct: (l / tot) * 100, remPct: (r / tot) * 100, deepPct: (d / tot) * 100, awakePct: (a / tot) * 100,
     };
   }, [data]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.topAppBar}>
-        <View style={styles.topAppLeft}>
-          <TouchableOpacity onPress={refetch} style={styles.menuIcon}>
-            <Ionicons name="menu" size={26} color={colors.primary} />
-          </TouchableOpacity>
-          <Text style={styles.topAppTitle}>Sleep Analysis</Text>
+    <SafeAreaView style={s.root} edges={['top']}>
+      {/* ── HEADER ── */}
+      <View style={s.header}>
+        <View>
+          <Text style={s.title}>Bio-Twin</Text>
+          <Text style={s.subtitle}>Biological Age & Sleep State</Text>
         </View>
-        <TouchableOpacity style={styles.avatarWrap}>
-          <Ionicons name="person-circle" size={32} color={colors.primary + '66'} />
+        <TouchableOpacity style={s.refreshBtn} onPress={refetch}>
+          <Ionicons name="refresh" size={20} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
       {isLoading || !data ? (
-        <View style={styles.loadingBox}>
+        <View style={s.center}>
           <ActivityIndicator color={colors.primary} />
-          <Text style={styles.loadingText}>Analyzing Sleep Data...</Text>
+          <Text style={s.loadingText}>Synthesizing Digital Twin...</Text>
         </View>
       ) : (
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-
-          {/* ── Sleep Timeline ── */}
-          <View style={styles.timelineSection}>
-            <View style={styles.timelineHeader}>
-              <View>
-                <Text style={styles.timelineOverline}>Last Night</Text>
-                <Text style={styles.timelineTitle}>Sleep Cycles</Text>
+        <ScrollView
+          contentContainerStyle={s.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* ── TWIN AGE HERO (floating card) ── */}
+          <View style={[s.heroCard, elevation.raised]}>
+            <View style={s.heroLeft}>
+              <View style={s.avatarCircle}>
+                <Ionicons name="body" size={48} color={colors.secondary} />
+                <Animated.View style={[s.glowRing, { opacity: glowAnim, transform: [{ scale: glowAnim }] }]} />
               </View>
-              <Text style={styles.timelineTotalTime}>{fmtMin(data.totalMin)}</Text>
             </View>
-
-            <View style={[styles.timelineCard, styles.bentoGlow]}>
-              <View style={styles.timelineBarWrap}>
-                <View style={[styles.timelineSeg, { width: `${awakePct}%`, backgroundColor: colors.health.danger }]} />
-                <View style={[styles.timelineSeg, { width: `${remPct}%`, backgroundColor: colors.tertiary }]} />
-                <View style={[styles.timelineSeg, { width: `${lightPct}%`, backgroundColor: colors.surfaceElevated }]} />
-                <View style={[styles.timelineSeg, { width: `${deepPct}%`, backgroundColor: colors.primary }]} />
-              </View>
-
-              <View style={styles.timelineLegend}>
-                <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: colors.health.danger }]} /><Text style={styles.legendText}>Awake</Text></View>
-                <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: colors.tertiary }]} /><Text style={styles.legendText}>REM</Text></View>
-                <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: colors.surfaceElevated }]} /><Text style={styles.legendText}>Light</Text></View>
-                <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: colors.primary }]} /><Text style={styles.legendText}>Deep</Text></View>
+            <View style={s.heroRight}>
+              <Text style={s.heroLabel}>BIOLOGICAL AGE</Text>
+              <Text style={s.heroAge}>{data.bio_age} yrs</Text>
+              <View style={s.trendPill}>
+                <Ionicons name="caret-down" size={12} color={colors.health.good} />
+                <Text style={s.trendText}>2 years younger than actual</Text>
               </View>
             </View>
           </View>
 
-          {/* ── Bento Grid Wrapper ── */}
-          <View style={styles.bentoGrid}>
-
-            {/* CHRONOOS PREDICTION CARD */}
-            <View style={[styles.chronoCard, styles.bentoGlow]}>
-              {/* Fake a background flare using absolute Animated.View */}
-              <Animated.View style={[styles.chronoFlare, { opacity: glowAnim, transform: [{ scale: glowAnim }] }]} />
-              <View style={{ zIndex: 2 }}>
-                <View style={styles.chronoHeader}>
-                  <Ionicons name="sparkles" size={16} color="rgba(255,255,255,0.8)" />
-                  <Text style={styles.chronoOverline}>ChronoOS Prediction</Text>
-                </View>
-                <Text style={styles.chronoScore}>Tomorrow: {data.predicted_tomorrow_score}/100 predicted health</Text>
-                <Text style={styles.chronoDesc}>
-                  Your deep sleep consistency suggests high morning cognitive clarity. Optimal recovery expected by 8:00 AM.
-                </Text>
-              </View>
+          {/* ── SLEEP CYCLES ── */}
+          <Text style={s.sectionTitle}>Sleep Cycles</Text>
+          <View style={[s.card, elevation.float]}>
+            <View style={s.cardHead}>
+              <Ionicons name="moon" size={18} color={colors.primary} />
+              <Text style={s.cardTitle}>Last Night's Analysis</Text>
+              <Text style={s.totalTime}>{fmtMin(data.totalMin)}</Text>
             </View>
 
-            {/* TWIN STATUS CARD */}
-            <View style={[styles.twinCard, styles.bentoGlow]}>
-              <View>
-                <Ionicons style={{ marginBottom: 12 }} name="happy" size={24} color={colors.tertiary} />
-                <Text style={styles.twinOverline}>Biological Status</Text>
-                <Text style={styles.twinAge}>Your biological twin age: {data.bio_age}</Text>
-              </View>
-              <View style={styles.twinTrend}>
-                <Ionicons name="trending-down" size={16} color={colors.tertiary} />
-                <Text style={styles.twinTrendText}>-2 years from actual</Text>
-              </View>
+            <View style={s.timelineBar}>
+              <View style={[s.barSeg, { width: `${awakePct}%`, backgroundColor: colors.health.danger }]} />
+              <View style={[s.barSeg, { width: `${remPct}%`, backgroundColor: '#A88AFF' }]} />
+              <View style={[s.barSeg, { width: `${lightPct}%`, backgroundColor: '#A8D4F0' }]} />
+              <View style={[s.barSeg, { width: `${deepPct}%`, backgroundColor: colors.primary }]} />
             </View>
 
-            {/* STATS ROW (3 Floating Cards) */}
-            <View style={styles.statsFloatRow}>
-              {/* Total Sleep */}
-              <View style={[styles.statFloatCard, styles.bentoGlow]}>
-                <Text style={styles.statFloatLabel}>TOTAL SLEEP</Text>
-                <Text style={styles.statFloatValue}>7h 42m</Text>
-                <Ionicons name="moon" size={24} color={colors.primary + '66'} style={{ marginTop: 8 }} />
-              </View>
-              {/* Deep Sleep */}
-              <View style={[styles.statFloatCard, styles.bentoGlow]}>
-                <Text style={styles.statFloatLabel}>DEEP SLEEP</Text>
-                <Text style={[styles.statFloatValue, { color: colors.text.primary }]}>{fmtMin(deepMin)}</Text>
-                <View style={styles.statFloatTrack}>
-                  <View style={[styles.statFloatFill, { width: '70%', backgroundColor: colors.primary }]} />
-                </View>
-              </View>
-              {/* REM Duration */}
-              <View style={[styles.statFloatCard, styles.bentoGlow]}>
-                <Text style={styles.statFloatLabel}>REM DURATION</Text>
-                <Text style={[styles.statFloatValue, { color: colors.text.primary }]}>{fmtMin(remMin)}</Text>
-                <View style={styles.statFloatTrack}>
-                  <View style={[styles.statFloatFill, { width: '85%', backgroundColor: colors.tertiary }]} />
-                </View>
-              </View>
+            <View style={s.legend}>
+              <LegendItem dot="#F28B82" label="Awake" />
+              <LegendItem dot="#A88AFF" label="REM" />
+              <LegendItem dot="#A8D4F0" label="Light" />
+              <LegendItem dot="#5B9BD5" label="Deep" />
             </View>
-
-            {/* HRV CARD */}
-            <HRVCard hrvValue={data.hrv_sdnn} />
-
-            {/* MINI PPG CARD */}
-            <MiniPPGWave />
-
           </View>
+
+          {/* ── CHRONOOS PREDICTION (Peach Accent) ── */}
+          <TouchableOpacity style={[s.chronoCard, elevation.float]} activeOpacity={0.9}>
+            <View style={s.chronoIconBox}>
+              <Ionicons name="sparkles" size={20} color={colors.accent} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.chronoTitle}>ChronoOS Forecast</Text>
+              <Text style={s.chronoSub}>
+                Prediction: <Text style={{ fontWeight: '700', color: colors.text.primary }}>{data.predicted_tomorrow_score}/100 </Text>
+                health readiness for tomorrow morning.
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.accent} />
+          </TouchableOpacity>
+
+          {/* ── HRV & VITALS REPLAY ── */}
+          <View style={s.grid}>
+            <View style={[s.gridCard, elevation.float]}>
+              <Text style={s.gridLabel}>HRV (SDNN)</Text>
+              <Text style={s.gridValue}>{data.hrv_sdnn}<Text style={s.gridUnit}>ms</Text></Text>
+              <View style={s.hrvBars}>
+                {[4, 7, 5, 9, 6, 8].map((h, i) => (
+                  <View key={i} style={[s.hrvBar, { height: h * 3, opacity: 0.3 + (h / 10) }]} />
+                ))}
+              </View>
+            </View>
+
+            <View style={[s.gridCard, elevation.float]}>
+              <Text style={s.gridLabel}>RESTING HR</Text>
+              <Text style={s.gridValue}>58<Text style={s.gridUnit}>bpm</Text></Text>
+              <View style={[s.iconCircle, { backgroundColor: colors.health.danger + '10' }]}>
+                <Ionicons name="heart" size={20} color={colors.health.danger} />
+              </View>
+            </View>
+          </View>
+
+          {/* ── VITALS REPLAY SVG ── */}
+          <View style={[s.card, elevation.float]}>
+            <View style={s.cardHead}>
+              <Ionicons name="pulse" size={18} color={colors.secondary} />
+              <Text style={s.cardTitle}>Vitals Replay</Text>
+              <TouchableOpacity style={s.playBtn}>
+                <Ionicons name="play" size={14} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            <View style={s.svgWrap}>
+              <Svg height="60" width="100%">
+                <Path
+                  d="M0,30 Q20,10 40,30 T80,30 T120,30 T160,30 T200,30 T240,30 T280,30 T320,30"
+                  fill="none" stroke={colors.secondary} strokeWidth="2"
+                  opacity={0.6}
+                />
+              </Svg>
+            </View>
+          </View>
+
+          <View style={{ height: 100 }} />
         </ScrollView>
       )}
     </SafeAreaView>
   );
 }
 
-// ── Styles (Ethereal Wellness Theme) ──
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  topAppBar: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg, height: 64,
-    backgroundColor: 'rgba(244, 251, 253, 0.7)', // matches f4fbfd/70
+function LegendItem({ dot, label }: { dot: string; label: string }) {
+  return (
+    <View style={s.legendItem}>
+      <View style={[s.legendDot, { backgroundColor: dot }]} />
+      <Text style={s.legendText}>{label}</Text>
+    </View>
+  );
+}
+
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
+  header: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
   },
-  topAppLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  menuIcon: { opacity: 0.8 },
-  topAppTitle: { fontSize: fonts.sizes.xl, fontWeight: '800', color: colors.primary, fontFamily: fonts.bold, letterSpacing: -0.5 },
-  avatarWrap: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: colors.primary + '66', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-
-  loadingBox: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
-  loadingText: { color: colors.text.secondary, fontSize: fonts.sizes.sm },
-
-  scroll: { flex: 1 },
-  scrollContent: { paddingTop: spacing.xl, paddingHorizontal: spacing.lg, paddingBottom: 100 },
-
-  bentoGlow: {
-    shadowColor: '#273538', shadowOpacity: 0.08, shadowRadius: 32, shadowOffset: { width: 0, height: 12 }, elevation: 8,
+  title: { fontSize: fonts.sizes.xl, fontWeight: '800', color: colors.text.primary, letterSpacing: -0.5 },
+  subtitle: { fontSize: fonts.sizes.sm, color: colors.text.secondary },
+  refreshBtn: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface,
+    alignItems: 'center', justifyContent: 'center', ...elevation.low,
   },
 
-  // ── Sleep Timeline Section ──
-  timelineSection: { marginBottom: spacing.xl },
-  timelineHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingHorizontal: 8, marginBottom: spacing.md },
-  timelineOverline: { color: colors.text.secondary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5 },
-  timelineTitle: { color: colors.text.primary, fontSize: 32, fontWeight: '800', letterSpacing: -0.5 },
-  timelineTotalTime: { color: colors.primary, fontSize: 20, fontWeight: '700' },
-  timelineCard: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg },
-  timelineBarWrap: { height: 48, width: '100%', flexDirection: 'row', borderRadius: radius.full, overflow: 'hidden', marginBottom: spacing.lg },
-  timelineSeg: { height: '100%' },
-  timelineLegend: { flexDirection: 'row', justifyContent: 'space-between' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  loadingText: { color: colors.text.secondary, fontSize: fonts.sizes.sm, fontWeight: '500' },
+
+  scrollContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
+
+  // Hero Card
+  heroCard: {
+    backgroundColor: colors.surface, borderRadius: radius.xl, padding: spacing.xl,
+    flexDirection: 'row', alignItems: 'center', marginBottom: spacing.lg,
+  },
+  heroLeft: { flex: 0 },
+  avatarCircle: {
+    width: 80, height: 80, borderRadius: 40, backgroundColor: colors.secondary + '15',
+    alignItems: 'center', justifyContent: 'center', position: 'relative',
+  },
+  glowRing: {
+    position: 'absolute', width: 100, height: 100, borderRadius: 50,
+    borderWidth: 2, borderColor: colors.secondary + '30',
+  },
+  heroRight: { flex: 1, paddingLeft: spacing.xl },
+  heroLabel: { fontSize: 10, fontWeight: '800', color: colors.secondary, letterSpacing: 1.5, marginBottom: 4 },
+  heroAge: { fontSize: 32, fontWeight: '900', color: colors.text.primary },
+  trendPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8,
+    backgroundColor: colors.health.good + '15', paddingHorizontal: 10, paddingVertical: 4,
+    borderRadius: radius.full, alignSelf: 'flex-start',
+  },
+  trendText: { fontSize: 11, fontWeight: '700', color: colors.health.good },
+
+  // Generic Card
+  card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md },
+  cardHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: spacing.lg },
+  cardTitle: { flex: 1, fontSize: fonts.sizes.md, fontWeight: '700', color: colors.text.primary },
+  totalTime: { fontSize: fonts.sizes.md, fontWeight: '800', color: colors.primary },
+
+  sectionTitle: {
+    fontSize: fonts.sizes.sm, fontWeight: '700', color: colors.text.secondary,
+    marginBottom: spacing.sm, marginTop: spacing.xs,
+  },
+
+  // Timeline
+  timelineBar: { height: 40, width: '100%', flexDirection: 'row', borderRadius: radius.md, overflow: 'hidden', marginBottom: spacing.md },
+  barSeg: { height: '100%' },
+  legend: { flexDirection: 'row', justifyContent: 'space-between' },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  legendDot: { width: 10, height: 10, borderRadius: 5 },
-  legendText: { color: colors.text.secondary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: -0.5 },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendText: { fontSize: 11, color: colors.text.secondary, fontWeight: '600' },
 
-  // ── Bento Grid Layout ──
-  bentoGrid: { gap: spacing.lg },
-
-  // ChronoOS Prediction
+  // Chrono Card (Peach Accent)
   chronoCard: {
-    backgroundColor: colors.primary, borderRadius: radius.lg, padding: spacing.xl,
-    overflow: 'hidden', minHeight: 240, justifyContent: 'space-between', position: 'relative'
-  },
-  chronoFlare: {
-    position: 'absolute', bottom: -50, right: -50,
-    width: 200, height: 200, borderRadius: 100,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-  },
-  chronoHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: spacing.md },
-  chronoOverline: { color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5 },
-  chronoScore: { color: '#FFF', fontSize: 36, fontWeight: '800', lineHeight: 42, marginBottom: spacing.md },
-  chronoDesc: { color: 'rgba(255,255,255,0.9)', fontSize: 16, lineHeight: 24 },
-
-  // Twin Status
-  twinCard: {
-    backgroundColor: '#e2fffa', // mapped from tertiary-container logic / teal pale
-    borderRadius: radius.lg, padding: spacing.lg,
-    borderWidth: 1, borderColor: 'rgba(0,107,100,0.1)',
-    justifyContent: 'space-between', minHeight: 180,
-  },
-  twinOverline: { color: colors.tertiary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 },
-  twinAge: { color: colors.tertiary, fontSize: 24, fontWeight: '800' },
-  twinTrend: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: spacing.lg },
-  twinTrendText: { color: colors.tertiary, opacity: 0.7, fontSize: 13, fontWeight: '700' },
-
-  // STATS FLOATING ROW (3 Column)
-  statsFloatRow: { flexDirection: 'row', gap: spacing.md, justifyContent: 'space-between' },
-  statFloatCard: {
-    flex: 1, backgroundColor: '#ecf5f8', borderRadius: radius.lg, padding: spacing.lg,
-    alignItems: 'center', justifyContent: 'center'
-  },
-  statFloatLabel: { color: colors.text.secondary, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 },
-  statFloatValue: { color: colors.primary, fontSize: 26, fontWeight: '800' },
-  statFloatTrack: { width: '100%', height: 6, backgroundColor: colors.border, borderRadius: 4, overflow: 'hidden', marginTop: 16 },
-  statFloatFill: { height: '100%', borderRadius: 4 },
-
-  // HRV CARD
-  hrvCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg,
-    borderWidth: 1, borderColor: 'rgba(214, 229, 233, 0.5)',
-    flexDirection: 'row', justifyContent: 'space-between',
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md,
+    borderWidth: 1.5, borderColor: colors.accent + '30',
   },
-  hrvLabel: { color: colors.text.secondary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 },
-  hrvValue: { color: colors.text.primary, fontSize: 40, fontWeight: '800' },
-  hrvUnit: { fontSize: 18, fontWeight: '600', color: colors.text.secondary },
-  hrvGraphWrap: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 48, marginTop: 16 },
-  hrvBar: { width: 8, backgroundColor: colors.primary, borderRadius: 4 },
+  chronoIconBox: {
+    width: 40, height: 40, borderRadius: radius.md,
+    backgroundColor: colors.accent + '15', alignItems: 'center', justifyContent: 'center',
+  },
+  chronoTitle: { fontSize: fonts.sizes.md, fontWeight: '700', color: colors.text.primary },
+  chronoSub: { fontSize: fonts.sizes.xs, color: colors.text.secondary, marginTop: 2, lineHeight: 18 },
 
-  // MINI PPG CARD
-  ppgCard: {
-    backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg,
-    borderWidth: 1, borderColor: 'rgba(214, 229, 233, 0.5)',
-  },
-  ppgHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
-  ppgTitle: { color: colors.text.primary, fontSize: 18, fontWeight: '800' },
-  ppgSubtitle: { color: colors.text.secondary, fontSize: 12, marginTop: 4 },
-  ppgPlayBtn: { backgroundColor: '#ffdbc9', padding: 12, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }, // secondaryContainer map
-  ppgSvgWrapper: { height: 96, width: '100%', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' },
-  ppgCursorLine: { position: 'absolute', left: '25%', top: 0, bottom: 0, width: 1, backgroundColor: 'rgba(182, 32, 72, 0.2)' } // primary/20
+  // Grid
+  grid: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },
+  gridCard: { flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, gap: 4 },
+  gridLabel: { fontSize: 10, fontWeight: '800', color: colors.text.muted, letterSpacing: 0.5 },
+  gridValue: { fontSize: 24, fontWeight: '900', color: colors.text.primary },
+  gridUnit: { fontSize: 12, fontWeight: '600', color: colors.text.muted, marginLeft: 2 },
+  hrvBars: { flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: 40, marginTop: 4 },
+  hrvBar: { width: 6, backgroundColor: colors.primary, borderRadius: 3 },
+  iconCircle: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
+
+  // SVG Wrap
+  svgWrap: { height: 60, width: '100%', backgroundColor: colors.background, borderRadius: radius.sm, overflow: 'hidden' },
+  playBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.secondary, alignItems: 'center', justifyContent: 'center' },
 });

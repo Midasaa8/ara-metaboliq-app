@@ -1,8 +1,8 @@
 /**
- * PART:   Home Dashboard Screen — Ethereal Elevation Redesign
+ * PART:   Home Dashboard — Wellness Ethereal Elevation
  * ACTOR:  Gemini 3.1
- * PHASE:  UI-Redesign — Full English + Ethereal Elevation floating cards
- * TASK:   Premium home with floating score ring, floating metric pills, action cards
+ * PHASE:  UI Redesign — 60-30-10 Floating Cards
+ * TASK:   Ivory canvas + floating wellness cards + peach CTAs
  * SCOPE:  IN: layout, hooks, floating card system
  *         OUT: business logic, real BLE data
  */
@@ -15,7 +15,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import { HealthScoreRing } from '@/components/health/HealthScoreRing';
 import { PPGWaveform } from '@/components/health/PPGWaveform';
@@ -30,12 +29,12 @@ const W = Dimensions.get('window').width;
 
 export default function HomeScreen() {
   const router = useRouter();
-  const firstName = useUserStore((s) => s.profile?.fullName?.split(' ')[0] ?? 'Athlete');
+  const firstName = useUserStore((s) => s.profile?.fullName?.split(' ')[0] ?? 'there');
   const streakDays = useHealthStore((s) => s.streakDays);
   const { score, subScores, isLoading } = useHealthScore();
   const { isConnected, latestReading } = usePatchConnection();
 
-  // Secret 5-tap hero to open Demo Flow
+  // Secret 5-tap on score ring → Demo Flow
   const [tapCount, setTapCount] = useState(0);
   function handleSecretTap() {
     if (tapCount + 1 >= 5) { setTapCount(0); router.push('/demo-flow'); }
@@ -45,204 +44,179 @@ export default function HomeScreen() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
-  const weakArea = !isLoading ? getWeakestAreas(subScores)[0] : null;
-  const weakMeta = weakArea ? SUB_SCORE_META[weakArea] : null;
-  const weakTier = weakArea ? getScoreTier(subScores[weakArea]) : null;
-
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={s.root} edges={['top']}>
 
       {/* ── HEADER ── */}
-      <View style={styles.header}>
+      <View style={s.header}>
         <View>
-          <Text style={styles.greeting}>{greeting} ✦</Text>
-          <Text style={styles.name}>{firstName}</Text>
+          <Text style={s.greeting}>{greeting} ☀️</Text>
+          <Text style={s.name}>{firstName}</Text>
         </View>
         <TouchableOpacity
-          style={[styles.podBtn, isConnected && styles.podBtnActive]}
+          style={[s.podChip, isConnected && s.podChipActive]}
           onPress={() => router.push('/patch-connect')}
         >
-          <Ionicons
-            name={isConnected ? 'radio-button-on' : 'radio-button-off'}
-            size={16}
-            color={isConnected ? colors.health.good : colors.text.muted}
-          />
-          <Text style={[styles.podLabel, isConnected && { color: colors.health.good }]}>
-            {isConnected ? 'Pod ·' : 'Connect'}
+          <View style={[s.podDot, isConnected && s.podDotActive]} />
+          <Text style={[s.podText, isConnected && { color: colors.health.good }]}>
+            {isConnected ? 'Pod Connected' : 'Connect Pod'}
           </Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={s.scrollContent}
         showsVerticalScrollIndicator={false}
       >
 
-        {/* ── HERO CARD: Health Score ── */}
+        {/* ── HERO: Score Card (floating) ── */}
         <TouchableOpacity activeOpacity={1} onPress={handleSecretTap}>
-          <LinearGradient
-            colors={['#4F6EF7', '#9B8FFF']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.heroCard}
-          >
-            {/* Floating score ring */}
-            <View style={styles.heroRing}>
+          <View style={s.heroCard}>
+            <View style={s.heroLeft}>
               {isLoading
-                ? <View style={styles.ringPlaceholder} />
-                : <HealthScoreRing score={score} size={180} thickness={14} subScores={subScores} />
+                ? <View style={s.ringPlaceholder} />
+                : <HealthScoreRing score={score} size={150} thickness={12} subScores={subScores} />
               }
             </View>
-
-            {/* Insight text */}
-            <View style={styles.heroInfo}>
-              <Text style={styles.heroLabel}>BIOMETRIC SCORE</Text>
-              <Text style={styles.heroScore}>{isLoading ? '—' : score}</Text>
-              {!isLoading && weakMeta && (
-                <View style={styles.insightChip}>
-                  <Ionicons name={weakMeta.icon as any} size={11} color="#fff" />
-                  <Text style={styles.insightChipText}>Focus: {weakMeta.label}</Text>
+            <View style={s.heroRight}>
+              <Text style={s.heroLabel}>WELLNESS SCORE</Text>
+              <Text style={s.heroScore}>{isLoading ? '—' : score}</Text>
+              <Text style={s.heroStatus}>
+                {score >= 80 ? '✨ Excellent' : score >= 60 ? '💪 Good' : '🌱 Improving'}
+              </Text>
+              {streakDays > 0 && (
+                <View style={s.streakPill}>
+                  <Text style={s.streakText}>🔥 {streakDays} day streak</Text>
                 </View>
               )}
             </View>
-
-            {/* Streak */}
-            {streakDays > 0 && (
-              <View style={styles.streakBadge}>
-                <Text style={styles.streakText}>🔥 {streakDays}d streak</Text>
-              </View>
-            )}
-
-            {/* Top-right blur dot decorations */}
-            <View style={[styles.blob, { top: -20, right: -20, width: 120, height: 120, opacity: 0.18 }]} />
-            <View style={[styles.blob, { bottom: -30, left: 40, width: 80, height: 80, opacity: 0.14 }]} />
-          </LinearGradient>
+          </View>
         </TouchableOpacity>
 
-        {/* ── LIVE VITALS ROW ── */}
+        {/* ── LIVE VITALS (floating pills) ── */}
         {latestReading && (
-          <View style={styles.vitalsRow}>
-            <VitalPill icon="heart" value={`${latestReading.hr}`} unit="bpm" color="#F44C7F" />
-            <VitalPill icon="water" value={`${latestReading.spo2}`} unit="% SpO₂" color={colors.secondary} />
-            <VitalPill icon="thermometer" value={`${latestReading.temperature.toFixed(1)}`} unit="°C" color={colors.health.warning} />
+          <View style={s.vitalsRow}>
+            <VitalPill icon="heart" value={`${latestReading.hr}`} unit="bpm" color={colors.health.danger} />
+            <VitalPill icon="water" value={`${latestReading.spo2}`} unit="SpO₂" color={colors.primary} />
+            <VitalPill icon="thermometer" value={`${latestReading.temperature.toFixed(1)}`} unit="°C" color={colors.accent} />
           </View>
         )}
 
-        {/* ── REALTIME PPG ── */}
-        <View style={[styles.floatCard, styles.ppgCard]}>
-          <View style={styles.cardHeader}>
+        {/* ── LIVE PPG (floating card) ── */}
+        <View style={s.card}>
+          <View style={s.cardHead}>
             <Ionicons name="pulse" size={16} color={colors.primary} />
-            <Text style={styles.cardTitle}>Live Biosignal</Text>
-            <View style={[styles.liveDot, isConnected && styles.liveDotActive]} />
+            <Text style={s.cardTitle}>Live Biosignal</Text>
+            <View style={[s.liveDot, isConnected && s.liveDotOn]} />
           </View>
           <PPGWaveform hr={latestReading?.hr ?? 72} isConnected={isConnected} />
         </View>
 
-        {/* ── QUICK ACTION GRID ── */}
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.actionGrid}>
-          <ActionCard
-            icon="mic"
-            label="Voice\nAnalysis"
-            sub="~5 sec"
-            gradient={['#4F6EF7', '#9B8FFF']}
+        {/* ── WELLNESS ACTIONS (floating 2x2 grid) ── */}
+        <Text style={s.sectionTitle}>Wellness Actions</Text>
+        <View style={s.actionGrid}>
+          <WellnessCard
+            icon="mic" label="Voice" sub="5s check-in"
+            bgColor="#EBF4FF" iconColor={colors.primary}
             onPress={() => router.push('/(tabs)/voice')}
           />
-          <ActionCard
-            icon="fitness"
-            label="Exercise\nTracker"
-            sub="Live PPG"
-            gradient={['#22D3A8', '#1AB99A']}
+          <WellnessCard
+            icon="fitness" label="Exercise" sub="Track workout"
+            bgColor="#E8F5EC" iconColor={colors.secondary}
             onPress={() => router.push('/(tabs)/exercise')}
           />
-          <ActionCard
-            icon="body"
-            label="Digital\nTwin"
-            sub="3D Body"
-            gradient={['#9B8FFF', '#4F6EF7']}
+          <WellnessCard
+            icon="body" label="Digital Twin" sub="Body insights"
+            bgColor="#F0ECFB" iconColor="#8B78D0"
             onPress={() => router.push('/(tabs)/twin')}
           />
-          <ActionCard
-            icon="shield-checkmark"
-            label="Insurance\nHSA"
-            sub="−30% premium"
-            gradient={['#F5A623', '#F44C7F']}
+          <WellnessCard
+            icon="shield-checkmark" label="Insurance" sub="HSA savings"
+            bgColor="#FFF4ED" iconColor={colors.accent}
             onPress={() => router.push('/(tabs)/fintech')}
           />
         </View>
 
-        {/* ── SUBSCORE BREAKDOWN ── */}
-        <Text style={styles.sectionTitle}>Health Dimensions</Text>
-        <View style={styles.floatCard}>
+        {/* ── HEALTH DIMENSIONS (floating card) ── */}
+        <Text style={s.sectionTitle}>Health Dimensions</Text>
+        <View style={s.card}>
           {(['exercise', 'sleep', 'voice', 'discipline'] as const).map((key, i) => {
             const meta = SUB_SCORE_META[key];
             const val = subScores?.[key] ?? 0;
-            const pct = val / 100;
             return (
-              <View key={key} style={[styles.dimRow, i > 0 && { marginTop: 14 }]}>
-                <View style={styles.dimLeft}>
-                  <Ionicons name={meta.icon as any} size={14} color={colors.primary} />
-                  <Text style={styles.dimLabel}>{meta.label}</Text>
+              <View key={key} style={[s.dimRow, i > 0 && { marginTop: 14 }]}>
+                <View style={s.dimLeft}>
+                  <View style={[s.dimIcon, { backgroundColor: colors.primary + '15' }]}>
+                    <Ionicons name={meta.icon as any} size={12} color={colors.primary} />
+                  </View>
+                  <Text style={s.dimLabel}>{meta.label}</Text>
                 </View>
-                <View style={styles.dimBarBg}>
-                  <View style={[styles.dimBar, { width: `${val}%` as any, backgroundColor: pct > 0.7 ? colors.health.good : pct > 0.4 ? colors.health.warning : colors.health.danger }]} />
+                <View style={s.dimBarBg}>
+                  <View style={[
+                    s.dimBar,
+                    {
+                      width: `${val}%` as any,
+                      backgroundColor: val > 70 ? colors.health.good : val > 40 ? colors.health.warning : colors.health.danger,
+                    },
+                  ]} />
                 </View>
-                <Text style={styles.dimScore}>{val}</Text>
+                <Text style={s.dimScore}>{val}</Text>
               </View>
             );
           })}
         </View>
 
-        {/* ── CONNECT POD NUDGE ── */}
+        {/* ── CONNECT NUDGE (floating, peach accent) ── */}
         {!isConnected && (
-          <TouchableOpacity style={styles.nudgeCard} onPress={() => router.push('/patch-connect')}>
-            <Ionicons name="hardware-chip-outline" size={20} color={colors.primary} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.nudgeTitle}>Connect ARA Pod</Text>
-              <Text style={styles.nudgeSub}>Real-time biometrics via BLE</Text>
+          <TouchableOpacity style={s.nudge} onPress={() => router.push('/patch-connect')}>
+            <View style={s.nudgeIconBox}>
+              <Ionicons name="hardware-chip-outline" size={20} color={colors.accent} />
             </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={s.nudgeTitle}>Connect ARA Pod</Text>
+              <Text style={s.nudgeSub}>Real-time biometrics via BLE</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.accent} />
           </TouchableOpacity>
         )}
 
+        <View style={{ height: spacing.xxl }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// ── Small inline components ───────────────────────────────────────────────────
+// ── Inline Sub-components ────────────────────────────────────────────────────
 
 function VitalPill({ icon, value, unit, color }: { icon: any; value: string; unit: string; color: string }) {
   return (
-    <View style={[styles.vitalPill, elevation.low]}>
+    <View style={[s.vitalPill, elevation.low]}>
       <Ionicons name={icon} size={14} color={color} />
-      <Text style={[styles.vitalValue, { color }]}>{value}</Text>
-      <Text style={styles.vitalUnit}>{unit}</Text>
+      <Text style={[s.vitalVal, { color }]}>{value}</Text>
+      <Text style={s.vitalUnit}>{unit}</Text>
     </View>
   );
 }
 
-function ActionCard({ icon, label, sub, gradient, onPress }: {
+function WellnessCard({ icon, label, sub, bgColor, iconColor, onPress }: {
   icon: any; label: string; sub: string;
-  gradient: [string, string]; onPress: () => void;
+  bgColor: string; iconColor: string; onPress: () => void;
 }) {
   return (
-    <TouchableOpacity onPress={onPress} style={styles.actionCardWrap}>
-      <LinearGradient colors={gradient} style={[styles.actionCard, elevation.mid]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-        <Ionicons name={icon} size={24} color="#fff" />
-        <Text style={styles.actionLabel}>{label}</Text>
-        <Text style={styles.actionSub}>{sub}</Text>
-      </LinearGradient>
+    <TouchableOpacity style={[s.wellnessCard, elevation.float]} onPress={onPress} activeOpacity={0.85}>
+      <View style={[s.wellnessIcon, { backgroundColor: bgColor }]}>
+        <Ionicons name={icon} size={22} color={iconColor} />
+      </View>
+      <Text style={s.wellnessLabel}>{label}</Text>
+      <Text style={s.wellnessSub}>{sub}</Text>
     </TouchableOpacity>
   );
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  scroll: { flex: 1 },
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
   scrollContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
 
   // Header
@@ -250,91 +224,100 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
   },
-  greeting: { fontSize: fonts.sizes.sm, color: colors.text.secondary, fontWeight: '600', letterSpacing: 0.5 },
-  name: { fontSize: fonts.sizes.xl, color: colors.text.primary, fontWeight: '800', marginTop: 2 },
+  greeting: { fontSize: fonts.sizes.sm, color: colors.text.secondary, fontWeight: '500' },
+  name: { fontSize: fonts.sizes.xxl, color: colors.text.primary, fontWeight: '800', marginTop: 2 },
 
-  podBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
+  podChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: spacing.md, paddingVertical: 8,
     borderRadius: radius.full, backgroundColor: colors.surface,
-    borderWidth: 1.5, borderColor: colors.border,
-    ...elevation.low,
+    borderWidth: 1.5, borderColor: colors.border, ...elevation.low,
   },
-  podBtnActive: { borderColor: colors.health.good + '88', backgroundColor: '#F0FDF9' },
-  podLabel: { fontSize: fonts.sizes.xs, fontWeight: '700', color: colors.text.muted },
+  podChipActive: { borderColor: colors.health.good + '66', backgroundColor: '#F0FAF5' },
+  podDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.text.muted },
+  podDotActive: { backgroundColor: colors.health.good },
+  podText: { fontSize: fonts.sizes.xs, fontWeight: '700', color: colors.text.muted },
 
-  // Hero Card
+  // Hero Score Card
   heroCard: {
-    borderRadius: radius.xl, padding: spacing.xl, marginBottom: spacing.lg,
-    flexDirection: 'row', alignItems: 'center', overflow: 'hidden',
-    ...elevation.high,
+    backgroundColor: colors.surface, borderRadius: radius.xl, padding: spacing.xl,
+    flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md,
+    ...elevation.raised,
   },
-  heroRing: { flex: 0 },
-  heroInfo: { flex: 1, paddingLeft: spacing.lg },
-  heroLabel: { fontSize: fonts.sizes.xs, color: 'rgba(255,255,255,0.7)', fontWeight: '800', letterSpacing: 1.5 },
-  heroScore: { fontSize: fonts.sizes.hero, color: '#fff', fontWeight: '900', lineHeight: 58 },
-  insightChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4,
-    backgroundColor: 'rgba(255,255,255,0.20)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.full,
-    alignSelf: 'flex-start',
+  heroLeft: { flex: 0 },
+  heroRight: { flex: 1, paddingLeft: spacing.lg },
+  heroLabel: {
+    fontSize: fonts.sizes.xs, fontWeight: '800', color: colors.primary,
+    letterSpacing: 1.5, marginBottom: 4,
   },
-  insightChipText: { fontSize: fonts.sizes.xs, color: '#fff', fontWeight: '700' },
-  streakBadge: {
-    position: 'absolute', top: 12, right: 12,
-    backgroundColor: 'rgba(255,255,255,0.18)', paddingHorizontal: 10, paddingVertical: 4,
-    borderRadius: radius.full,
+  heroScore: { fontSize: 56, fontWeight: '900', color: colors.text.primary, lineHeight: 60 },
+  heroStatus: { fontSize: fonts.sizes.sm, color: colors.text.secondary, marginTop: 2 },
+  streakPill: {
+    backgroundColor: colors.accent + '18', paddingHorizontal: 10, paddingVertical: 4,
+    borderRadius: radius.full, alignSelf: 'flex-start', marginTop: 8,
   },
-  streakText: { fontSize: fonts.sizes.xs, color: '#fff', fontWeight: '700' },
-  blob: { position: 'absolute', borderRadius: 60, backgroundColor: '#fff' },
-  ringPlaceholder: { width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(255,255,255,0.10)' },
+  streakText: { fontSize: fonts.sizes.xs, color: colors.accent, fontWeight: '700' },
+  ringPlaceholder: {
+    width: 150, height: 150, borderRadius: 75,
+    backgroundColor: colors.surfaceElevated,
+  },
 
   // Vital pills
   vitalsRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
   vitalPill: {
-    flex: 1, flexDirection: 'column', alignItems: 'center', gap: 2, paddingVertical: 10,
+    flex: 1, alignItems: 'center', gap: 2, paddingVertical: 12,
     backgroundColor: colors.surface, borderRadius: radius.lg,
   },
-  vitalValue: { fontSize: fonts.sizes.xl, fontWeight: '800' },
+  vitalVal: { fontSize: fonts.sizes.xl, fontWeight: '800' },
   vitalUnit: { fontSize: fonts.sizes.xs, color: colors.text.muted, fontWeight: '600' },
 
-  // Floating cards
-  floatCard: {
-    backgroundColor: colors.surface, borderRadius: radius.xl, padding: spacing.lg,
-    marginBottom: spacing.md, ...elevation.mid,
+  // Generic floating card
+  card: {
+    backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg,
+    marginBottom: spacing.md, ...elevation.float,
   },
-  ppgCard: { marginBottom: spacing.md },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
+  cardHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
   cardTitle: { flex: 1, fontSize: fonts.sizes.md, fontWeight: '700', color: colors.text.primary },
   liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border },
-  liveDotActive: { backgroundColor: colors.health.good },
+  liveDotOn: { backgroundColor: colors.health.good },
 
-  // Section titles
+  // Section title
   sectionTitle: {
-    fontSize: fonts.sizes.sm, fontWeight: '800', color: colors.text.secondary,
-    letterSpacing: 1, marginBottom: spacing.sm, marginTop: spacing.xs,
+    fontSize: fonts.sizes.sm, fontWeight: '700', color: colors.text.secondary,
+    letterSpacing: 0.5, marginBottom: spacing.sm, marginTop: spacing.xs,
   },
 
-  // Action grid
+  // 2x2 Wellness grid
   actionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
-  actionCardWrap: { width: (W - spacing.lg * 2 - spacing.sm) / 2 },
-  actionCard: { borderRadius: radius.lg, padding: spacing.md, gap: 4 },
-  actionLabel: { fontSize: fonts.sizes.md, color: '#fff', fontWeight: '800', marginTop: spacing.sm },
-  actionSub: { fontSize: fonts.sizes.xs, color: 'rgba(255,255,255,0.75)', fontWeight: '600' },
+  wellnessCard: {
+    width: (W - spacing.lg * 2 - spacing.sm) / 2,
+    backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md,
+  },
+  wellnessIcon: {
+    width: 44, height: 44, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center',
+    marginBottom: spacing.sm,
+  },
+  wellnessLabel: { fontSize: fonts.sizes.md, fontWeight: '700', color: colors.text.primary },
+  wellnessSub: { fontSize: fonts.sizes.xs, color: colors.text.muted, marginTop: 2 },
 
   // Dimension bars
   dimRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  dimLeft: { flexDirection: 'row', alignItems: 'center', gap: 5, width: 90 },
+  dimLeft: { flexDirection: 'row', alignItems: 'center', gap: 6, width: 100 },
+  dimIcon: { width: 24, height: 24, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
   dimLabel: { fontSize: fonts.sizes.xs, color: colors.text.secondary, fontWeight: '600' },
   dimBarBg: { flex: 1, height: 6, backgroundColor: colors.surfaceElevated, borderRadius: radius.full, overflow: 'hidden' },
   dimBar: { height: 6, borderRadius: radius.full },
   dimScore: { fontSize: fonts.sizes.xs, fontWeight: '800', color: colors.text.primary, width: 28, textAlign: 'right' },
 
   // Nudge card
-  nudgeCard: {
+  nudge: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
-    backgroundColor: colors.primary + '10', borderRadius: radius.xl,
-    padding: spacing.lg, borderWidth: 1.5, borderColor: colors.primary + '30',
-    ...elevation.low,
+    backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg,
+    borderWidth: 1.5, borderColor: colors.accent + '30', ...elevation.float,
+  },
+  nudgeIconBox: {
+    width: 40, height: 40, borderRadius: radius.md,
+    backgroundColor: colors.accent + '15', alignItems: 'center', justifyContent: 'center',
   },
   nudgeTitle: { fontSize: fonts.sizes.md, fontWeight: '700', color: colors.text.primary },
   nudgeSub: { fontSize: fonts.sizes.xs, color: colors.text.muted, marginTop: 2 },

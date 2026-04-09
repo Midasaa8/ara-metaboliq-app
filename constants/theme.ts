@@ -1,91 +1,117 @@
 /**
- * PART:   Constants — Theme (Ethereal Elevation Design System)
+ * PART:   Constants — Theme (Wellness Ethereal Elevation — 60-30-10 Rule)
  * ACTOR:  Gemini 3.1
- * PHASE:  1 → 11 → 12-UI-Redesign
- * READS:  GEMINI_PHASES.md §Design Language, PLAN_B §XI
- * TASK:   Multi-layered shadow system for floating card depth
- * SCOPE:  IN: visual tokens only
- *         OUT: logic, API, business rules
+ * PHASE:  UI Redesign + Phase 13
+ * TASK:   Mental-health-friendly color system with floating card shadows
+ *
+ * COLOR STRATEGY (60-30-10 Rule):
+ *   60% — Background: Ivory White (#FBF9F5) — clean, breathable canvas
+ *   30% — Secondary:  Soft Blue (#5B9BD5) / Sage Green (#7FBCA8) — calm, trustworthy
+ *   10% — Accent:     Peach (#F5A67D) / Coral (#F28B82) — warm, inviting CTAs
+ *   Text: Dark Charcoal (#2C2C2C) — never pure black, gentle on eyes
  */
 
-// ── ETHEREAL ELEVATION PALETTE (Light) ──
+// ── LIGHT MODE (Wellness Ivory) ──
 export const lightColors = {
-  background: '#F0F4FF',      // Soft Blue-White canvas
-  surface: '#FFFFFF',          // Pure card surface
-  surfaceElevated: '#F8FAFF',  // Inner card / input bg
-  surfaceGlass: 'rgba(255,255,255,0.72)', // Glassmorphism card
-  primary: '#4F6EF7',          // Nebula Blue — CTAs
-  primaryDark: '#3B55D4',      // Pressed state
-  secondary: '#22D3A8',        // Teal Mint — health positive
-  accent: '#9B8FFF',           // Lavender — highlights/badges
-  tertiary: '#A5C8FF',         // Sky haze — ring glow
+  // 60% — Background layer
+  background: '#FBF9F5',         // Warm Ivory — main canvas
+  surface: '#FFFFFF',             // Pure white — card surface
+  surfaceElevated: '#F5F3EF',     // Warm fog — inner card / input bg
+  surfaceGlass: 'rgba(255,255,255,0.80)', // Glassmorphism overlay
+
+  // 30% — Secondary (content blocks, rings, progress bars)
+  primary: '#5B9BD5',             // Soft Blue — trust, calm
+  primaryDark: '#4A87C0',         // Pressed state
+  secondary: '#7FBCA8',           // Sage Green — healing, balance
+  secondaryDark: '#6BA894',       // Pressed green
+  accent: '#F5A67D',              // Peach — 10% accent for CTAs
+  accentDark: '#E8956D',          // Pressed peach
+
+  // Text (never pure black)
   text: {
-    primary: '#1A1F36',        // Near-black, deep ink
-    secondary: '#4A5578',      // Mid-tone body
-    muted: '#9BA5C2',          // Hint / disabled
+    primary: '#2C2C2C',           // Dark Charcoal
+    secondary: '#6B7280',         // Warm Gray
+    muted: '#A3A8B2',             // Light stone
     inverse: '#FFFFFF',
   },
+
+  // Health status colors (softer variants)
   health: {
-    good: '#22D3A8',           // Teal
-    warning: '#F5A623',        // Amber
-    danger: '#F44C7F',         // rose
-    info: '#4F6EF7',           // Nebula Blue
-    excellent: '#22D3A8',
+    good: '#7FBCA8',              // Sage Green
+    warning: '#F5A67D',           // Peach/Amber
+    danger: '#F28B82',            // Soft Coral
+    info: '#5B9BD5',              // Soft Blue
+    excellent: '#5EC4A0',         // Brighter Sage
   },
-  border: '#E4EAFF',           // Periwinkle rule
+
+  // Borders & dividers
+  border: '#EBE8E2',              // Warm pearl
+  borderFocus: '#5B9BD5',         // Blue highlight on focus
+
+  // Gradient combos
   gradients: {
-    hero: ['#4F6EF7', '#9B8FFF'],   // Blue → Lavender
-    scoreRing: ['#4F6EF7', '#22D3A8'],   // Blue → Teal
-    cta: ['#4F6EF7', '#3B55D4'],
-    mint: ['#22D3A8', '#1AB99A'],
-    aiProcessing: ['#9B8FFF', '#4F6EF7'],
-    card: ['#FFFFFF', '#F0F4FF'],
-    danger: ['#F44C7F', '#C0325A'],
+    hero: ['#5B9BD5', '#7FBCA8'],   // Blue → Sage
+    cta: ['#F5A67D', '#F28B82'],   // Peach → Coral
+    calm: ['#5B9BD5', '#A8D4F0'],   // Blue → Light Sky
+    nature: ['#7FBCA8', '#B5DBC9'],   // Sage → Light Mint
+    warmth: ['#F5A67D', '#FDDEC0'],   // Peach → Cream
+    card: ['#FFFFFF', '#FBF9F5'],   // White → Ivory
+    scoreRing: ['#5B9BD5', '#7FBCA8'],
   },
 } as const;
 
-// ── DARK MODE (Ethereal Deep) ──
+// ── DARK MODE (Wellness Deep) ──
 export const darkColors = {
-  background: '#11151F',
-  surface: '#1C2136',
-  surfaceElevated: '#242B45',
-  surfaceGlass: 'rgba(28,33,54,0.80)',
-  primary: '#7C9EFF',
-  primaryDark: '#4F6EF7',
-  secondary: '#22D3A8',
-  accent: '#B8ADFF',
-  tertiary: '#A5C8FF',
+  background: '#1A1D23',
+  surface: '#22262E',
+  surfaceElevated: '#2C3038',
+  surfaceGlass: 'rgba(34,38,46,0.85)',
+  primary: '#82B8E0',
+  primaryDark: '#5B9BD5',
+  secondary: '#8FD4B8',
+  secondaryDark: '#7FBCA8',
+  accent: '#F5B896',
+  accentDark: '#F5A67D',
   text: {
-    primary: '#E9EEFF',
-    secondary: '#8A96C0',
-    muted: '#4A5578',
-    inverse: '#11151F',
+    primary: '#E8E6E3',
+    secondary: '#9DA3AE',
+    muted: '#5A6070',
+    inverse: '#1A1D23',
   },
   health: {
-    good: '#22D3A8',
-    warning: '#FBC05D',
-    danger: '#FF6FA3',
-    info: '#7C9EFF',
-    excellent: '#22D3A8',
+    good: '#8FD4B8',
+    warning: '#F5B896',
+    danger: '#F5A0A0',
+    info: '#82B8E0',
+    excellent: '#8FD4B8',
   },
-  border: '#2E3860',
+  border: '#363B44',
+  borderFocus: '#82B8E0',
   gradients: {
-    hero: ['#7C9EFF', '#B8ADFF'],
-    scoreRing: ['#7C9EFF', '#22D3A8'],
-    cta: ['#7C9EFF', '#4F6EF7'],
-    mint: ['#22D3A8', '#16B89B'],
-    aiProcessing: ['#B8ADFF', '#7C9EFF'],
-    card: ['#1C2136', '#11151F'],
-    danger: ['#FF6FA3', '#C0325A'],
+    hero: ['#82B8E0', '#8FD4B8'],
+    cta: ['#F5B896', '#F5A0A0'],
+    calm: ['#82B8E0', '#A8D4F0'],
+    nature: ['#8FD4B8', '#B5DBC9'],
+    warmth: ['#F5B896', '#FDDEC0'],
+    card: ['#22262E', '#1A1D23'],
+    scoreRing: ['#82B8E0', '#8FD4B8'],
   },
 } as const;
 
-// PHASE 11: backward-compatible alias
+// Backward-compatible alias
 export const colors = lightColors;
 
+// ── SPACING & RADIUS ──
 export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48 } as const;
-export const radius = { sm: 8, md: 14, lg: 24, xl: 32, full: 9999 } as const;
+export const radius = {
+  sm: 8,
+  md: 12,      // Standard button corners (friendly, inviting)
+  lg: 16,      // Card corners (premium feel)
+  xl: 24,      // Hero card
+  full: 9999,  // Pill shape
+} as const;
 
+// ── TYPOGRAPHY ──
 export const fonts = {
   regular: 'System',
   medium: 'System',
@@ -93,49 +119,58 @@ export const fonts = {
   sizes: { xs: 10, sm: 12, md: 14, lg: 16, xl: 20, xxl: 28, hero: 48 },
 } as const;
 
-// ── ETHEREAL ELEVATION SHADOWS ──
-// Combine two shadows on Android: primary deep shadow + top-edge highlight
+// ── ETHEREAL ELEVATION SHADOWS (Multi-layered, floating cards) ──
 export const elevation = {
   none: {
     shadowColor: 'transparent',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    elevation: 0,
+    shadowOpacity: 0, shadowRadius: 0, elevation: 0,
   },
+  /** Subtle lift — for pills, chips, small interactive elements */
   low: {
-    shadowColor: '#4F6EF7',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
+    shadowColor: '#2C2C2C',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
     elevation: 2,
   },
-  mid: {
-    shadowColor: '#4F6EF7',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.14,
-    shadowRadius: 20,
-    elevation: 6,
+  /** Standard floating card — main content cards */
+  float: {
+    shadowColor: '#2C2C2C',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 5,
   },
-  high: {
-    shadowColor: '#4F6EF7',
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.20,
+  /** Raised card — active/focused states, hero sections */
+  raised: {
+    shadowColor: '#5B9BD5',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  /** Hero — top-level hero cards with color glow */
+  hero: {
+    shadowColor: '#5B9BD5',
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.18,
     shadowRadius: 32,
     elevation: 12,
   },
-  glow: {
-    shadowColor: '#9B8FFF',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.35,
-    shadowRadius: 20,
-    elevation: 8,
+  /** Warm glow — for CTA/accent elements */
+  warmGlow: {
+    shadowColor: '#F5A67D',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 18,
+    elevation: 6,
   },
 } as const;
 
-// ── Legacy glow strings (kept for web/SVG) ──
+// ── Legacy glow strings (web/SVG) ──
 export const glows = {
-  blue: '0 0 20px rgba(79,110,247,0.30)',
-  mint: '0 0 20px rgba(34,211,168,0.30)',
-  coral: '0 0 20px rgba(244,76,127,0.30)',
+  blue: '0 0 20px rgba(91,155,213,0.25)',
+  mint: '0 0 20px rgba(127,188,168,0.25)',
+  peach: '0 0 20px rgba(245,166,125,0.25)',
 } as const;

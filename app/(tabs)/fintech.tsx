@@ -1,24 +1,16 @@
 /**
- * PART:   Insurance & HSA Screen — UI shell (Phase 9 complete redesign)
+ * PART:   Insurance & HSA Screen — Wellness Redesign
  * ACTOR:  Gemini 3.1
- * PHASE:  9 — Insurance / HSA Calculator
- * READS:  AGENTS.md §7, PLAN_B §4 Insurance Simulator, §5 HSA,
- *         GEMINI_PHASES.md §PHASE 9, mockup stitch_thi_t_k_giao_di_n_p(4)
- * TASK:   Premium display, discount meter, HSA auto-save toggle,
- *         5-year projection SVG chart, anomaly alert — Bento grid layout
- * SCOPE:  IN: all UI elements, charts, useInsurance hook display
- *         OUT: Premium formula calc (server), 5-year NPV (server)
+ * PHASE:  UI Redesign — Floating Cards
+ * TASK:   Premium display, discount meter, and HSA auto-save with Ivory bg and Peach accents
+ * SCOPE:  IN: UI, useInsurance hook, floating finance cards
+ *         OUT: 5-year NPV (server)
  */
 
 import { useRef, useState, useEffect } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Switch,
-  Animated,
+  View, Text, StyleSheet, ScrollView,
+  TouchableOpacity, Switch, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,420 +22,219 @@ import {
   getPotentialSaving,
 } from '@/services/core/InsuranceCalc';
 
-// ── Helpers ──
-function fmtVND(n: number, compact = false): string {
-  if (compact && n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M₫';
-  if (compact && n >= 1_000) return (n / 1_000).toFixed(0) + 'K₫';
-  return n.toLocaleString('vi-VN') + '₫';
+function fmtUSD(n: number): string {
+  // Mocking USD for global premium feel, though backend uses VND
+  return '$' + (n / 25000).toFixed(2);
 }
 
-// ── Hero Premium Card ──
-function HeroCard({ premium, discountPct }: { premium: number; discountPct: number; healthScore: number }) {
-  const pulseAnim = useRef(new Animated.Value(0.85)).current;
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1, duration: 2500, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 0.85, duration: 2500, useNativeDriver: true }),
-      ])
-    ).start();
-  }, [pulseAnim]);
-
-  return (
-    <View style={styles.heroCard}>
-      {/* Decorative glow blob */}
-      <Animated.View style={[styles.heroBlob, { transform: [{ scale: pulseAnim }] }]} />
-
-      <View style={styles.heroContent}>
-        {/* Label */}
-        <View style={styles.heroBadgeRow}>
-          <Ionicons name="shield-checkmark" size={14} color="rgba(255,255,255,0.9)" />
-          <Text style={styles.heroBadgeText}>ACTIVE PLAN PREMIUM</Text>
-        </View>
-
-        {/* Premium amount */}
-        <View style={styles.heroPriceRow}>
-          <Text style={styles.heroPriceAmount}>{fmtVND(premium, true)}</Text>
-          <Text style={styles.heroPricePeriod}>/tháng</Text>
-        </View>
-
-        {/* Score pill */}
-        <View style={styles.heroScorePill}>
-          <Text style={styles.heroScorePillText}>
-            Dựa trên Health Score • Đã giảm {Math.round(discountPct * 100)}%
-          </Text>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-// ── Discount Meter ──
-function DiscountMeter({ discountPct }: { discountPct: number }) {
-  const barPct = getDiscountBarPct(discountPct);
-  const fillAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(fillAnim, {
-      toValue: barPct / 100,
-      duration: 1000,
-      useNativeDriver: false,
-    }).start();
-  }, [barPct]);
-
-  const barColor = discountPct >= 0.20 ? colors.health.good
-    : discountPct >= 0.10 ? colors.secondary : colors.health.warning;
-
-  return (
-    <View style={[styles.card, styles.cardSpan2, styles.bentoGlow]}>
-      <View style={styles.discountHeader}>
-        <View>
-          <Text style={styles.cardOverline}>TIẾN ĐỘ TIẾT KIỆM</Text>
-          <Text style={styles.discountTitle}>
-            Giảm giá hiện tại:{' '}
-            <Text style={[styles.discountHighlight, { color: barColor }]}>
-              {Math.round(discountPct * 100)}%
-            </Text>
-          </Text>
-        </View>
-        <View style={[styles.discountIconWrap, { backgroundColor: barColor + '20' }]}>
-          <Ionicons name="trending-up" size={22} color={barColor} />
-        </View>
-      </View>
-
-      {/* Progress bar */}
-      <View style={styles.progressTrack}>
-        <Animated.View
-          style={[
-            styles.progressFill,
-            {
-              width: fillAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
-              backgroundColor: barColor,
-            },
-          ]}
-        />
-      </View>
-      <View style={styles.progressLabels}>
-        <Text style={styles.progressLabel}>0% Base</Text>
-        <Text style={styles.progressLabel}>30% Max Tier</Text>
-      </View>
-    </View>
-  );
-}
-
-// ── Goal Alert Card (Potential Savings) ──
-function GoalAlertCard({ extraSaving }: { extraSaving: number }) {
-  return (
-    <View style={[styles.card, styles.cardSquare, styles.bentoGlow]}>
-      <Ionicons name="rocket" size={24} color={colors.secondary} style={{ marginBottom: spacing.sm }} />
-      <Text style={styles.cardOverline}>GOAL ALERT</Text>
-      <Text style={styles.goalDesc}>
-        Nếu score tăng lên <Text style={{ color: colors.secondary, fontWeight: '800' }}>90</Text>
-      </Text>
-      <Text style={styles.goalAmount}>
-        {fmtVND(extraSaving, true)}
-        <Text style={styles.goalAmountSub}>/tháng</Text>
-      </Text>
-    </View>
-  );
-}
-
-// ── HSA Auto-Save Card ──
-function HSACard({ monthlySave, enabled, onToggle }: {
-  monthlySave: number;
-  enabled: boolean;
-  onToggle: (v: boolean) => void;
-}) {
-  return (
-    <View style={[styles.card, styles.cardSquare, styles.bentoGlow]}>
-      <View style={styles.hsaHeader}>
-        <Ionicons name="wallet" size={22} color={colors.primary} />
-        <Switch
-          value={enabled}
-          onValueChange={onToggle}
-          trackColor={{ false: colors.border, true: colors.primary + '55' }}
-          thumbColor={enabled ? colors.primary : colors.text.muted}
-          style={{ transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }] }}
-        />
-      </View>
-      <Text style={styles.cardOverline}>HSA AUTO-SAVE</Text>
-      <Text style={styles.hsaDesc}>Tiết kiệm hàng tháng dự kiến:</Text>
-      <Text style={styles.hsaAmount}>{fmtVND(monthlySave, true)}</Text>
-    </View>
-  );
-}
-
-// ── 5-Year Projection Chart ──
-function ProjectionChart({ projected5y }: { projected5y: number }) {
-  const W = 320;
-  const H = 140;
-  // Healthy path: steeper growth
-  const healthyPath = `M0,${H} L${W * 0.25},${H * 0.86} L${W * 0.5},${H * 0.64} L${W * 0.75},${H * 0.43} L${W},${H * 0.21}`;
-  // Current path: flatter
-  const currentPath = `M0,${H} L${W * 0.25},${H * 0.93} L${W * 0.5},${H * 0.82} L${W * 0.75},${H * 0.79} L${W},${H * 0.75}`;
-
-  return (
-    <View style={[styles.card, styles.cardSpan2, styles.bentoGlow]}>
-      <View style={styles.chartHeader}>
-        <View>
-          <Text style={styles.cardOverline}>5-YEAR PROJECTION</Text>
-          <Text style={styles.chartTitle}>Tích lũy tài sản</Text>
-        </View>
-        <View style={{ gap: spacing.xs }}>
-          <View style={styles.legendRow}>
-            <View style={[styles.legendDot, { backgroundColor: colors.primary }]} />
-            <Text style={styles.legendText}>Healthy Path</Text>
-          </View>
-          <View style={styles.legendRow}>
-            <View style={[styles.legendDot, { backgroundColor: colors.border }]} />
-            <Text style={styles.legendText}>Current Path</Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.chartArea}>
-        <Svg
-          width="100%"
-          height={H}
-          viewBox={`0 0 ${W} ${H}`}
-          preserveAspectRatio="none"
-        >
-          <Defs>
-            <LinearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <Stop offset="0%" stopColor={colors.primary} stopOpacity="1" />
-              <Stop offset="100%" stopColor={colors.tertiary} stopOpacity="1" />
-            </LinearGradient>
-          </Defs>
-          {/* Current path — grey */}
-          <Path d={currentPath} fill="none" stroke={colors.border} strokeWidth="3" strokeLinecap="round" />
-          {/* Healthy path — gradient */}
-          <Path d={healthyPath} fill="none" stroke="url(#lineGrad)" strokeWidth="4" strokeLinecap="round" />
-        </Svg>
-
-        {/* X-axis labels */}
-        <View style={styles.chartXAxis}>
-          {['Năm 1', 'Năm 2', 'Năm 3', 'Năm 4', 'Năm 5'].map((label) => (
-            <Text key={label} style={styles.chartXLabel}>{label}</Text>
-          ))}
-        </View>
-      </View>
-
-      <View style={styles.chartFooter}>
-        <Text style={styles.chartFooterText}>
-          Dự phóng 5 năm (lãi kép 8%/năm):{' '}
-          <Text style={{ color: colors.primary, fontWeight: '800' }}>{fmtVND(projected5y, true)}</Text>
-        </Text>
-      </View>
-    </View>
-  );
-}
-
-// ── Anomaly Alert Card ──
-function AnomalyAlert({ count }: { count: number }) {
-  if (count === 0) return null;
-  return (
-    <View style={[styles.card, styles.cardSpan2, styles.anomalyAlert]}>
-      <View style={styles.anomalyIconWrap}>
-        <Ionicons name="warning" size={24} color={colors.health.danger} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.anomalyTitle}>{count} Bill Anomalies detected</Text>
-        <Text style={styles.anomalyDesc}>Được phát hiện trong lần quét bảo hiểm gần nhất.</Text>
-      </View>
-      <TouchableOpacity style={styles.anomalyBtn}>
-        <Ionicons name="chevron-forward" size={20} color={colors.text.secondary} />
-      </TouchableOpacity>
-    </View>
-  );
-}
-
-// ── Main Screen ──
 export default function FintechScreen() {
   const { premium, hsa, isLoading } = useInsurance();
   const [hsaEnabled, setHsaEnabled] = useState(true);
-
   const { extraSavingPerMonth } = getPotentialSaving(premium, 90);
 
-  // Mock anomaly count from last nutrition scan
-  const anomalyCount = 2; // TODO(Claude Sonnet Phase 9): pull from healthStore or nutritionStore
-
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {/* ── Header ── */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity style={styles.menuBtn}>
-            <Ionicons name="menu" size={26} color={colors.primary} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Health Savings</Text>
-        </View>
-        <TouchableOpacity style={styles.avatarWrap}>
-          <Ionicons name="person-circle" size={32} color={colors.primary} />
-        </TouchableOpacity>
+    <SafeAreaView style={s.root} edges={['top']}>
+      {/* ── HEADER ── */}
+      <View style={s.header}>
+        <Text style={s.title}>Health Savings</Text>
+        <Text style={s.subtitle}>HSA & Insurance Optimizer</Text>
       </View>
 
       <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={s.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Hero Card ── */}
-        <HeroCard
-          premium={premium.final_premium_vnd}
-          discountPct={premium.discount_pct}
-          healthScore={premium.health_score}
-        />
+        {/* ── PREMIUM HERO CARD ── */}
+        <View style={[s.heroCard, elevation.raised]}>
+          <View style={s.heroLeft}>
+            <Text style={s.heroLabel}>MONTHLY PREMIUM</Text>
+            <Text style={s.heroPrice}>{fmtUSD(premium.final_premium_vnd)}</Text>
+            <View style={s.discountBadge}>
+              <Text style={s.discountText}>-{Math.round(premium.discount_pct * 100)}% Health Discount</Text>
+            </View>
+          </View>
+          <View style={s.heroRight}>
+            <View style={s.shieldCircle}>
+              <Ionicons name="shield-checkmark" size={32} color="#fff" />
+            </View>
+          </View>
+        </View>
 
-        {/* ── Bento Grid ── */}
-        <View style={styles.bentoGrid}>
-
-          {/* Discount Meter — full width */}
-          <DiscountMeter discountPct={premium.discount_pct} />
-
-          {/* Goal Alert + HSA Toggle — 2 col */}
-          <View style={styles.twoColRow}>
-            <GoalAlertCard extraSaving={extraSavingPerMonth} />
-            <HSACard
-              monthlySave={hsa.monthly_save_vnd}
-              enabled={hsaEnabled}
-              onToggle={setHsaEnabled}
-            />
+        {/* ── SAVINGS PROGRESS ── */}
+        <Text style={s.sectionTitle}>Savings Progress</Text>
+        <View style={[s.card, elevation.float]}>
+          <View style={s.cardHead}>
+            <View>
+              <Text style={s.cardHeadTitle}>Discount Tier</Text>
+              <Text style={s.cardHeadSub}>Next goal: 90 Health Score</Text>
+            </View>
+            <View style={[s.iconBox, { backgroundColor: colors.secondary + '20' }]}>
+              <Ionicons name="trending-up" size={20} color={colors.secondary} />
+            </View>
           </View>
 
-          {/* 5-Year Projection — full width */}
-          <ProjectionChart projected5y={hsa.projected_5y_vnd} />
-
-          {/* Anomaly Alert — full width */}
-          <AnomalyAlert count={anomalyCount} />
-
+          <View style={s.meterTrack}>
+            <View style={[s.meterFill, { width: `${getDiscountBarPct(premium.discount_pct)}%`, backgroundColor: colors.secondary }]} />
+          </View>
+          <View style={s.meterLabels}>
+            <Text style={s.meterLabel}>Base</Text>
+            <Text style={s.meterLabel}>Max Discount (30%)</Text>
+          </View>
         </View>
+
+        {/* ── GRID: GOAL & HSA ── */}
+        <View style={s.grid}>
+          <View style={[s.gridCard, elevation.float]}>
+            <Ionicons name="rocket" size={24} color={colors.accent} />
+            <Text style={s.gridTitle}>Top Gear</Text>
+            <Text style={s.gridDesc}>Save an extra</Text>
+            <Text style={s.gridValue}>{fmtUSD(extraSavingPerMonth)}</Text>
+            <Text style={s.gridUnit}>/mo</Text>
+          </View>
+
+          <View style={[s.gridCard, elevation.float]}>
+            <View style={s.hsaActions}>
+              <Ionicons name="wallet" size={24} color={colors.primary} />
+              <Switch
+                value={hsaEnabled}
+                onValueChange={setHsaEnabled}
+                trackColor={{ false: colors.border, true: colors.primary + '50' }}
+                thumbColor={hsaEnabled ? colors.primary : colors.text.muted}
+                style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
+              />
+            </View>
+            <Text style={s.gridTitle}>HSA Auto-Save</Text>
+            <Text style={s.gridDesc}>Projected Save</Text>
+            <Text style={s.gridValue}>{fmtUSD(hsa.monthly_save_vnd)}</Text>
+          </View>
+        </View>
+
+        {/* ── 5-YEAR PROJECTION ── */}
+        <Text style={s.sectionTitle}>Wealth Projection</Text>
+        <View style={[s.card, elevation.float]}>
+          <Text style={s.chartTitle}>Accumulated HSA Balance</Text>
+          <View style={s.chartContainer}>
+            <Svg height="140" width="100%">
+              <Defs>
+                <LinearGradient id="grad" x1="0" y1="0" x2="1" y2="0">
+                  <Stop offset="0" stopColor={colors.primary} stopOpacity="1" />
+                  <Stop offset="1" stopColor={colors.secondary} stopOpacity="1" />
+                </LinearGradient>
+              </Defs>
+              {/* Current Path */}
+              <Path
+                d="M0,130 L80,120 L160,115 L240,110 L320,105"
+                fill="none" stroke={colors.border} strokeWidth="3"
+              />
+              {/* Optimized Path */}
+              <Path
+                d="M0,130 L80,100 L160,70 L240,40 L320,10"
+                fill="none" stroke="url(#grad)" strokeWidth="4"
+              />
+            </Svg>
+            <View style={s.chartLegend}>
+              <View style={s.legendItem}><View style={[s.legendDot, { backgroundColor: colors.primary }]} /><Text style={s.legendText}>Optimized</Text></View>
+              <View style={s.legendItem}><View style={[s.legendDot, { backgroundColor: colors.border }]} /><Text style={s.legendText}>Baseline</Text></View>
+            </View>
+          </View>
+          <View style={s.chartFooter}>
+            <Text style={s.chartFooterText}>
+              5-year potential: <Text style={{ color: colors.primary, fontWeight: '800' }}>{fmtUSD(hsa.projected_5y_vnd)}</Text>
+            </Text>
+          </View>
+        </View>
+
+        {/* ── ANOMALY ALERT (Soft Coral) ── */}
+        <TouchableOpacity style={s.alert} activeOpacity={0.9}>
+          <View style={s.alertIcon}>
+            <Ionicons name="alert-circle" size={24} color={colors.health.danger} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={s.alertTitle}>2 Anomalies Detected</Text>
+            <Text style={s.alertDesc}>Unexpected billing patterns in recent claims.</Text>
+          </View>
+          <Ionicons name="arrow-forward" size={18} color={colors.text.muted} />
+        </TouchableOpacity>
+
+        <View style={{ height: 100 }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// ── Styles ──
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
+  header: { padding: spacing.lg },
+  title: { fontSize: fonts.sizes.xl, fontWeight: '800', color: colors.text.primary, letterSpacing: -0.5 },
+  subtitle: { fontSize: fonts.sizes.sm, color: colors.text.secondary, marginTop: 2 },
+  scrollContent: { paddingHorizontal: spacing.lg, paddingBottom: 100 },
 
-  // Header
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg, height: 60,
-    backgroundColor: 'rgba(248,250,251,0.85)',
-    borderBottomWidth: 1, borderBottomColor: 'rgba(226,232,240,0.4)',
-  },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  menuBtn: { opacity: 0.8 },
-  headerTitle: { fontSize: fonts.sizes.lg, fontWeight: '800', color: colors.primary, letterSpacing: -0.5 },
-  avatarWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surfaceElevated, alignItems: 'center', justifyContent: 'center' },
-
-  scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: spacing.lg, paddingBottom: 120, paddingTop: spacing.lg },
-
-  // ── Hero Card ──
+  // Hero Card
   heroCard: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    padding: spacing.xl,
-    overflow: 'hidden',
-    position: 'relative',
-    marginBottom: spacing.lg,
-    shadowColor: colors.primary, shadowOpacity: 0.30, shadowRadius: 24, shadowOffset: { width: 0, height: 12 },
-    elevation: 12,
+    backgroundColor: colors.primary, borderRadius: radius.xl, padding: spacing.xl,
+    flexDirection: 'row', alignItems: 'center', marginBottom: spacing.lg,
   },
-  heroBlob: {
-    position: 'absolute', right: -32, bottom: -32,
-    width: 180, height: 180, borderRadius: 90,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+  heroLeft: { flex: 1 },
+  heroLabel: { fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.8)', letterSpacing: 1.5, marginBottom: 4 },
+  heroPrice: { fontSize: 40, fontWeight: '900', color: '#fff', letterSpacing: -1 },
+  discountBadge: {
+    marginTop: 12, alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.full,
   },
-  heroContent: { zIndex: 2 },
-  heroBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.sm },
-  heroBadgeText: { color: 'rgba(255,255,255,0.9)', fontSize: 10, fontWeight: '800', letterSpacing: 1.5, textTransform: 'uppercase' },
-  heroPriceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
-  heroPriceAmount: { color: '#FFF', fontSize: 48, fontWeight: '900', letterSpacing: -1 },
-  heroPricePeriod: { color: 'rgba(255,255,255,0.75)', fontSize: 18, fontWeight: '500' },
-  heroScorePill: {
-    marginTop: spacing.md, alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.20)',
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.md, paddingVertical: 6,
-  },
-  heroScorePillText: { color: '#FFF', fontSize: 12, fontWeight: '600' },
-
-  // ── Bento Grid ──
-  bentoGrid: { gap: spacing.md },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-  },
-  cardSpan2: { /* full width — handled by parent flex */ },
-  cardSquare: { flex: 1 },
-  bentoGlow: {
-    shadowColor: '#273538', shadowOpacity: 0.06, shadowRadius: 32,
-    shadowOffset: { width: 0, height: 12 }, elevation: 5,
-  },
-  twoColRow: { flexDirection: 'row', gap: spacing.md },
-
-  // ── Common ──
-  cardOverline: {
-    fontSize: 10, fontWeight: '800', letterSpacing: 1.2,
-    color: colors.text.secondary, textTransform: 'uppercase', marginBottom: 4,
+  discountText: { fontSize: 11, fontWeight: '700', color: '#fff' },
+  heroRight: { flex: 0 },
+  shieldCircle: {
+    width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center', justifyContent: 'center',
   },
 
-  // ── Discount Meter ──
-  discountHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
-  discountTitle: { fontSize: 16, fontWeight: '700', color: colors.text.primary },
-  discountHighlight: { fontWeight: '800' },
-  discountIconWrap: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  progressTrack: { height: 14, backgroundColor: colors.surfaceElevated, borderRadius: radius.full, overflow: 'hidden' },
-  progressFill: { height: '100%', borderRadius: radius.full },
-  progressLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.xs },
-  progressLabel: { fontSize: 9, fontWeight: '700', color: colors.text.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  // Generic card
+  card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md },
+  cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
+  cardHeadTitle: { fontSize: fonts.sizes.md, fontWeight: '700', color: colors.text.primary },
+  cardHeadSub: { fontSize: 12, color: colors.text.secondary, marginTop: 2 },
+  iconBox: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
 
-  // ── Goal Alert ──
-  goalDesc: { fontSize: 12, color: colors.text.secondary, fontWeight: '500', lineHeight: 17 },
-  goalAmount: { fontSize: 22, fontWeight: '800', color: colors.text.primary, marginTop: spacing.xs },
-  goalAmountSub: { fontSize: 11, fontWeight: '500', color: colors.text.secondary },
+  sectionTitle: { fontSize: fonts.sizes.sm, fontWeight: '700', color: colors.text.secondary, marginBottom: spacing.sm },
 
-  // ── HSA Card ──
-  hsaHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
-  hsaDesc: { fontSize: 11, color: colors.text.secondary, fontWeight: '500', lineHeight: 16 },
-  hsaAmount: { fontSize: 22, fontWeight: '800', color: colors.text.primary, marginTop: spacing.xs },
+  // Progress meter
+  meterTrack: { height: 12, backgroundColor: colors.surfaceElevated, borderRadius: 6, overflow: 'hidden' },
+  meterFill: { height: '100%', borderRadius: 6 },
+  meterLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
+  meterLabel: { fontSize: 10, fontWeight: '700', color: colors.text.muted, textTransform: 'uppercase' },
 
-  // ── Projection Chart ──
-  chartHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.lg },
-  chartTitle: { fontSize: 18, fontWeight: '800', color: colors.text.primary },
-  legendRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  // Grid
+  grid: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },
+  gridCard: { flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, gap: 4 },
+  gridTitle: { fontSize: fonts.sizes.md, fontWeight: '700', color: colors.text.primary, marginTop: 8 },
+  gridDesc: { fontSize: 11, color: colors.text.muted, fontWeight: '600' },
+  gridValue: { fontSize: 24, fontWeight: '900', color: colors.text.primary },
+  gridUnit: { fontSize: 12, fontWeight: '600', color: colors.text.muted },
+  hsaActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' },
+
+  // Chart
+  chartTitle: { fontSize: fonts.sizes.sm, fontWeight: '800', color: colors.text.primary, marginBottom: spacing.md },
+  chartContainer: { height: 180, width: '100%', position: 'relative' },
+  chartLegend: { flexDirection: 'row', gap: spacing.md, marginTop: 10 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendText: { fontSize: 9, fontWeight: '700', color: colors.text.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  chartArea: { position: 'relative' },
-  chartXAxis: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.sm },
-  chartXLabel: { fontSize: 9, fontWeight: '700', color: colors.text.muted, textTransform: 'uppercase' },
+  legendText: { fontSize: 10, color: colors.text.muted, fontWeight: '700', textTransform: 'uppercase' },
   chartFooter: {
-    marginTop: spacing.md, backgroundColor: colors.surfaceElevated,
-    borderRadius: radius.md, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, alignItems: 'center',
+    marginTop: spacing.md, paddingVertical: 12, alignItems: 'center',
+    backgroundColor: colors.surfaceElevated, borderRadius: radius.md,
   },
-  chartFooterText: { fontSize: 11, color: colors.text.secondary, textAlign: 'center' },
+  chartFooterText: { fontSize: 12, color: colors.text.secondary },
 
-  // ── Anomaly Alert ──
-  anomalyAlert: {
+  // Alert
+  alert: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
-    backgroundColor: colors.health.danger + '0D',
-    borderWidth: 1, borderColor: colors.health.danger + '30',
+    backgroundColor: colors.health.danger + '10', borderRadius: radius.lg, padding: spacing.lg,
+    borderWidth: 1.5, borderColor: colors.health.danger + '30',
   },
-  anomalyIconWrap: {
-    width: 48, height: 48, borderRadius: 24,
-    backgroundColor: colors.health.danger + '20',
+  alertIcon: {
+    width: 44, height: 44, borderRadius: 22, backgroundColor: colors.health.danger + '20',
     alignItems: 'center', justifyContent: 'center',
   },
-  anomalyTitle: { fontSize: 14, fontWeight: '800', color: colors.health.danger },
-  anomalyDesc: { fontSize: 11, color: colors.text.secondary, marginTop: 2 },
-  anomalyBtn: {
-    width: 36, height: 36, borderRadius: 18,
-    backgroundColor: colors.surface,
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8,
-  },
+  alertTitle: { fontSize: fonts.sizes.md, fontWeight: '800', color: colors.health.danger },
+  alertDesc: { fontSize: 12, color: colors.text.secondary, marginTop: 2 },
 });
