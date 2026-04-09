@@ -7,7 +7,7 @@
  *         OUT: screen UI (each screen handles that)
  */
 
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
