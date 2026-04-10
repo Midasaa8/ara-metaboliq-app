@@ -101,7 +101,7 @@ const s = StyleSheet.create({
   retryBtn: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     backgroundColor: colors.accent, paddingVertical: spacing.md, paddingHorizontal: spacing.xl,
-    borderRadius: radius.md, ...elevation.warmGlow,
+    borderRadius: radius.md, ...elevation.glow,
   },
   retryText: { fontSize: fonts.sizes.md, fontWeight: '700', color: '#fff' },
 });
