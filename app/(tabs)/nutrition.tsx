@@ -55,7 +55,7 @@ export default function NutritionScreen() {
                 {/* ── SCAN HERO (Peach Accent) ── */}
                 <View style={s.heroSection}>
                     <Animated.View style={[s.scanBtnContainer, { transform: [{ scale: pulseAnim }] }]}>
-                        <TouchableOpacity style={[s.scanBtn, elevation.hero]}>
+                        <TouchableOpacity style={[s.scanBtn, elevation.float]}>
                             <Camera size={40} color="#fff" strokeWidth={1.5} />
                             <Text style={s.scanBtnText}>Scan Bill</Text>
                         </TouchableOpacity>
@@ -95,7 +95,7 @@ export default function NutritionScreen() {
 
                 {/* ── ALERTS (Soft Coral) ── */}
                 <View style={s.grid}>
-                    <View style={[s.alertCard, elevation.low, { borderColor: colors.health.danger + '30' }]}>
+                    <View style={[s.alertCard, elevation.ambient, { borderColor: colors.health.danger + '30' }]}>
                         <View style={[s.alertIcon, { backgroundColor: colors.health.danger + '15' }]}>
                             <AlertCircle size={20} color={colors.health.danger} strokeWidth={2.5} />
                         </View>
@@ -103,7 +103,7 @@ export default function NutritionScreen() {
                         <Text style={s.alertDesc}>Stabilizers found in Yogurt.</Text>
                     </View>
 
-                    <View style={[s.alertCard, elevation.low, { borderColor: colors.health.warning + '30' }]}>
+                    <View style={[s.alertCard, elevation.ambient, { borderColor: colors.health.warning + '30' }]}>
                         <View style={[s.alertIcon, { backgroundColor: colors.health.warning + '15' }]}>
                             <AlertTriangle size={20} color={colors.health.warning} strokeWidth={2.5} />
                         </View>
@@ -156,7 +156,7 @@ const s = StyleSheet.create({
     subtitle: { fontSize: fonts.sizes.sm, color: colors.text.secondary },
     iconBtn: {
         width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface,
-        alignItems: 'center', justifyContent: 'center', ...elevation.low,
+        alignItems: 'center', justifyContent: 'center', ...elevation.ambient,
     },
 
     scrollContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },

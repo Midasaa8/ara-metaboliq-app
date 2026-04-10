@@ -83,7 +83,7 @@ export default function TwinScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* ── TWIN AGE HERO (floating card) ── */}
-          <View style={[s.heroCard, elevation.raised]}>
+          <View style={[s.heroCard, elevation.float]}>
             <View style={s.heroLeft}>
               <View style={s.avatarCircle}>
                 <Dna size={48} color={colors.secondary} strokeWidth={1.5} />
@@ -206,7 +206,7 @@ const s = StyleSheet.create({
   subtitle: { fontSize: fonts.sizes.sm, color: colors.text.secondary },
   refreshBtn: {
     width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface,
-    alignItems: 'center', justifyContent: 'center', ...elevation.low,
+    alignItems: 'center', justifyContent: 'center', ...elevation.ambient,
   },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },

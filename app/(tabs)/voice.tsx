@@ -101,7 +101,7 @@ export default function VoiceScreen() {
               <View style={[s.micOuter, isRecording && s.micOuterActive]}>
                 <View style={s.micInner}>
                   <TouchableOpacity
-                    style={[s.micBtn, isRecording && s.micBtnActive, elevation.raised]}
+                    style={[s.micBtn, isRecording && s.micBtnActive, elevation.float]}
                     onPress={startRecording}
                     disabled={isRecording}
                     activeOpacity={0.8}
@@ -123,7 +123,7 @@ export default function VoiceScreen() {
               </View>
 
               {isRecording && (
-                <View style={[s.statusBadge, elevation.low]}>
+                <View style={[s.statusBadge, elevation.ambient]}>
                   <View style={s.dot} />
                   <Text style={s.statusText}>LISTENING ({countdown}s)</Text>
                 </View>
@@ -174,7 +174,7 @@ export default function VoiceScreen() {
                 <Text style={{ color: colors.primary, fontWeight: '700' }}> focus </Text>
                 with mild respiratory stress detected. We recommend a 5-minute breathing exercise.
               </Text>
-              <TouchableOpacity style={[s.cta, elevation.warmGlow]} onPress={reset}>
+              <TouchableOpacity style={[s.cta, elevation.glow]} onPress={reset}>
                 <Text style={s.ctaText}>Retake Analysis</Text>
               </TouchableOpacity>
             </View>

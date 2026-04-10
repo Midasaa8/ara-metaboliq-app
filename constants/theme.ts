@@ -1,177 +1,159 @@
 /**
- * PART:   Constants — Theme (Wellness Ethereal Elevation — 60-30-10 Rule)
- * ACTOR:  Gemini 3.1
- * PHASE:  UI Redesign + Phase 13
- * TASK:   Mental-health-friendly color system with floating card shadows
+ * PART:   Constants — Theme (Healthcare Crimson + Teal — Reference Design)
+ * ACTOR:  Claude Sonnet 4.6 + Gemini 3.1
+ * PHASE:  UI Redesign v2 — Medical Reference Palette
+ * TASK:   Match reference mockup color system — Crimson primary, Sky-blue bg, Teal accent
+ *         Font: Nunito (rounded, friendly medical)
  *
  * COLOR STRATEGY (60-30-10 Rule):
- *   60% — Background: Ivory White (#FBF9F5) — clean, breathable canvas
- *   30% — Secondary:  Soft Blue (#5B9BD5) / Sage Green (#7FBCA8) — calm, trustworthy
- *   10% — Accent:     Peach (#F5A67D) / Coral (#F28B82) — warm, inviting CTAs
- *   Text: Dark Charcoal (#2C2C2C) — never pure black, gentle on eyes
+ *   60% — Background: Sky Blue-Grey (#EBF2F5) — clinical, fresh canvas
+ *   30% — Primary:  Healthcare Crimson (#C1274A) — authority, urgency, medical
+ *   10% — Accent:   Healing Teal (#4ECFB5) — recovery, calm, biological status
  */
 
-// ── LIGHT MODE (Wellness Ivory) ──
+// ── LIGHT MODE (Healthcare Crisp) ──
 export const lightColors = {
   // 60% — Background layer
-  background: '#FBF9F5',         // Warm Ivory — main canvas
-  surface: '#FFFFFF',             // Pure white — card surface
-  surfaceElevated: '#F5F3EF',     // Warm fog — inner card / input bg
-  surfaceGlass: 'rgba(255,255,255,0.80)', // Glassmorphism overlay
+  background: '#EBF2F5',         // Sky blue-grey — clinical fresh canvas
+  surface: '#FFFFFF',             // White — card surface
+  surfaceElevated: '#F0F6F9',     // Slight blue tint — inner card / input bg
+  surfaceGlass: 'rgba(255,255,255,0.88)', // Glassmorphism overlay
 
-  // 30% — Secondary (content blocks, rings, progress bars)
-  primary: '#5B9BD5',             // Soft Blue — trust, calm
-  primaryDark: '#4A87C0',         // Pressed state
-  secondary: '#7FBCA8',           // Sage Green — healing, balance
-  secondaryDark: '#6BA894',       // Pressed green
-  accent: '#F5A67D',              // Peach — 10% accent for CTAs
-  accentDark: '#E8956D',          // Pressed peach
+  // 30% — Primary (crimson) + Supporting
+  primary: '#C1274A',             // Healthcare Crimson — authority, trust
+  primaryDark: '#9E1E3C',         // Pressed / dark variant
+  secondary: '#4ECFB5',           // Healing Teal — recovery, biological status
+  secondaryDark: '#38B8A0',       // Pressed teal
+  accent: '#E8688A',              // Rose pink — gradient pair for crimson CTAs
+  accentDark: '#D5547A',          // Pressed rose
 
   // Text (never pure black)
   text: {
-    primary: '#2C2C2C',           // Dark Charcoal
-    secondary: '#6B7280',         // Warm Gray
-    muted: '#A3A8B2',             // Light stone
+    primary: '#1A2535',           // Deep navy-charcoal — readable on white
+    secondary: '#5C6A7A',         // Slate grey
+    muted: '#9BA8B5',             // Light steel
     inverse: '#FFFFFF',
   },
 
-  // Health status colors (softer variants)
+  // Health status colors
   health: {
-    good: '#7FBCA8',              // Sage Green
-    warning: '#F5A67D',           // Peach/Amber
-    danger: '#F28B82',            // Soft Coral
-    info: '#5B9BD5',              // Soft Blue
-    excellent: '#5EC4A0',         // Brighter Sage
+    good: '#4ECFB5',              // Teal = healthy / good
+    warning: '#F59E0B',           // Amber = caution
+    danger: '#EF4444',            // Red = critical
+    info: '#3B82F6',              // Blue = informational
+    excellent: '#4ECFB5',         // Same as good (excellent)
   },
 
   // Borders & dividers
-  border: '#EBE8E2',              // Warm pearl
-  borderFocus: '#5B9BD5',         // Blue highlight on focus
+  border: '#D4E4EC',              // Soft sky border
+  borderFocus: '#C1274A',         // Crimson highlight on focus
 
-  // Gradient combos
+  // Gradient combos (from reference mockups)
   gradients: {
-    hero: ['#5B9BD5', '#7FBCA8'],   // Blue → Sage
-    cta: ['#F5A67D', '#F28B82'],   // Peach → Coral
-    calm: ['#5B9BD5', '#A8D4F0'],   // Blue → Light Sky
-    nature: ['#7FBCA8', '#B5DBC9'],   // Sage → Light Mint
-    warmth: ['#F5A67D', '#FDDEC0'],   // Peach → Cream
-    card: ['#FFFFFF', '#FBF9F5'],   // White → Ivory
-    scoreRing: ['#5B9BD5', '#7FBCA8'],
+    hero: ['#C1274A', '#E8688A'],    // Crimson → Rose (reference hero cards)
+    cta: ['#4ECFB5', '#38B8A0'],    // Teal → Deep Teal (biological status)
+    calm: ['#EBF2F5', '#D4E4EC'],   // Sky → Pale Blue (background variety)
+    nature: ['#4ECFB5', '#B5E0D8'], // Teal → Mint
+    warmth: ['#E8688A', '#F5C1CE'], // Rose → Blush
+    card: ['#FFFFFF', '#F5FAFB'],   // White → Ice
+    scoreRing: ['#C1274A', '#E8688A'],
   },
 } as const;
 
-// ── DARK MODE (Wellness Deep) ──
+// ── DARK MODE (Healthcare Deep) ──
 export const darkColors = {
-  background: '#1A1D23',
-  surface: '#22262E',
-  surfaceElevated: '#2C3038',
-  surfaceGlass: 'rgba(34,38,46,0.85)',
-  primary: '#82B8E0',
-  primaryDark: '#5B9BD5',
-  secondary: '#8FD4B8',
-  secondaryDark: '#7FBCA8',
-  accent: '#F5B896',
-  accentDark: '#F5A67D',
+  background: '#141920',          // Near-black navy
+  surface: '#1E2530',             // Dark navy card
+  surfaceElevated: '#252E3C',     // Slightly lighter navy
+  surfaceGlass: 'rgba(20,25,32,0.88)',
+  primary: '#E8688A',             // Rose (lighter crimson for dark bg)
+  primaryDark: '#C1274A',         // Pressed → original crimson
+  secondary: '#5EDFC9',           // Bright teal (pops on dark)
+  secondaryDark: '#4ECFB5',
+  accent: '#F09AAE',              // Pastel rose
+  accentDark: '#E8688A',
   text: {
-    primary: '#E8E6E3',
-    secondary: '#9DA3AE',
-    muted: '#5A6070',
-    inverse: '#1A1D23',
+    primary: '#E8EEF4',           // Ice white — readable on dark
+    secondary: '#9DAAB8',         // Muted steel
+    muted: '#4F5E6E',             // Dark steel
+    inverse: '#141920',
   },
   health: {
-    good: '#8FD4B8',
-    warning: '#F5B896',
-    danger: '#F5A0A0',
-    info: '#82B8E0',
-    excellent: '#8FD4B8',
+    good: '#5EDFC9',
+    warning: '#FBB040',
+    danger: '#F87171',
+    info: '#60A5FA',
+    excellent: '#5EDFC9',
   },
-  border: '#363B44',
-  borderFocus: '#82B8E0',
+  border: '#2A3547',
+  borderFocus: '#E8688A',
   gradients: {
-    hero: ['#82B8E0', '#8FD4B8'],
-    cta: ['#F5B896', '#F5A0A0'],
-    calm: ['#82B8E0', '#A8D4F0'],
-    nature: ['#8FD4B8', '#B5DBC9'],
-    warmth: ['#F5B896', '#FDDEC0'],
-    card: ['#22262E', '#1A1D23'],
-    scoreRing: ['#82B8E0', '#8FD4B8'],
+    hero: ['#E8688A', '#C1274A'],
+    cta: ['#5EDFC9', '#4ECFB5'],
+    calm: ['#141920', '#1E2530'],
+    nature: ['#5EDFC9', '#4ECFB5'],
+    warmth: ['#F09AAE', '#E8688A'],
+    card: ['#1E2530', '#141920'],
+    scoreRing: ['#E8688A', '#F09AAE'],
   },
 } as const;
 
-// Backward-compatible alias
+// Backward-compatible alias (always light; screens using useTheme get reactive)
 export const colors = lightColors;
 
 // ── SPACING & RADIUS ──
 export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48 } as const;
 export const radius = {
   sm: 8,
-  md: 12,      // Standard button corners (friendly, inviting)
+  md: 12,      // Standard button corners
   lg: 16,      // Card corners (premium feel)
-  xl: 24,      // Hero card
-  full: 9999,  // Pill shape
+  xl: 24,      // Hero card / bottom sheet
+  full: 9999,  // Pill / circle
 } as const;
 
-// ── TYPOGRAPHY ──
+// ── TYPOGRAPHY (Nunito — Medical / Patient-Friendly Rounded) ──
 export const fonts = {
-  regular: 'Outfit_400Regular',
-  medium: 'Outfit_600SemiBold',
-  bold: 'Outfit_700Bold',
-  black: 'Outfit_900Black',
+  regular: 'Nunito_400Regular',
+  medium: 'Nunito_500Medium',
+  semibold: 'Nunito_600SemiBold',
+  bold: 'Nunito_700Bold',
+  black: 'Nunito_800ExtraBold',
   sizes: { xs: 10, sm: 12, md: 14, lg: 16, xl: 20, xxl: 28, hero: 48 },
 } as const;
 
-// ── ETHEREAL ELEVATION SHADOWS (Multi-layered, floating cards) ──
+// ── ELEVATION SHADOWS ──
 export const elevation = {
   none: {
     shadowColor: 'transparent',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0, shadowRadius: 0, elevation: 0,
   },
-  /** Subtle lift — for pills, chips, small interactive elements */
-  low: {
-    shadowColor: '#2C2C2C',
-    shadowOffset: { width: 0, height: 2 },
+  ambient: {
+    shadowColor: '#1A2535',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  /** Standard floating card — main content cards */
-  float: {
-    shadowColor: '#2C2C2C',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
     shadowRadius: 16,
-    elevation: 5,
+    elevation: 4,
   },
-  /** Raised card — active/focused states, hero sections */
-  raised: {
-    shadowColor: '#5B9BD5',
+  float: {
+    shadowColor: '#1A2535',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
+    shadowOpacity: 0.10,
+    shadowRadius: 28,
     elevation: 8,
   },
-  /** Hero — top-level hero cards with color glow */
-  hero: {
-    shadowColor: '#5B9BD5',
-    shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: 0.18,
-    shadowRadius: 32,
-    elevation: 12,
-  },
-  /** Warm glow — for CTA/accent elements */
-  warmGlow: {
-    shadowColor: '#F5A67D',
+  glow: {
+    shadowColor: '#4ECFB5',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 18,
+    shadowOpacity: 0.30,
+    shadowRadius: 16,
     elevation: 6,
   },
 } as const;
 
 // ── Legacy glow strings (web/SVG) ──
 export const glows = {
-  blue: '0 0 20px rgba(91,155,213,0.25)',
-  mint: '0 0 20px rgba(127,188,168,0.25)',
-  peach: '0 0 20px rgba(245,166,125,0.25)',
+  blue: '0 0 20px rgba(193,39,74,0.20)',
+  mint: '0 0 20px rgba(78,207,181,0.25)',
+  peach: '0 0 20px rgba(232,104,138,0.22)',
 } as const;

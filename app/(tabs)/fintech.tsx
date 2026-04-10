@@ -52,7 +52,7 @@ export default function FintechScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* ── PREMIUM HERO CARD ── */}
-        <View style={[s.heroCard, elevation.raised]}>
+        <View style={[s.heroCard, elevation.float]}>
           <View style={s.heroLeft}>
             <Text style={s.heroLabel}>MONTHLY PREMIUM</Text>
             <Text style={s.heroPrice}>{fmtUSD(premium.final_premium_vnd)}</Text>

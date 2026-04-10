@@ -148,7 +148,7 @@ export default function ExerciseScreen() {
         {/* ── TRACKING STATE ── */}
         {screenState === 'tracking' && (
           <View style={s.trackingBox}>
-            <View style={[s.cameraStage, elevation.raised]}>
+            <View style={[s.cameraStage, elevation.float]}>
               <View style={s.cameraOverlay}>
                 <Text style={s.giantRep}>{repCounter.reps}</Text>
                 <Text style={s.repLabel}>REPS</Text>
@@ -161,7 +161,7 @@ export default function ExerciseScreen() {
 
             <View style={s.controlRow}>
               {!repCounter.isRunning ? (
-                <TouchableOpacity style={[s.primaryBtn, elevation.warmGlow]} onPress={repCounter.start}>
+                <TouchableOpacity style={[s.primaryBtn, elevation.glow]} onPress={repCounter.start}>
                   <Play size={20} color="#fff" strokeWidth={2.5} fill="#fff" />
                   <Text style={s.btnText}>Start Now</Text>
                 </TouchableOpacity>
@@ -194,7 +194,7 @@ export default function ExerciseScreen() {
         {/* ── RESULT STATE ── */}
         {screenState === 'result' && sessionResult && (
           <View style={s.resultBox}>
-            <View style={[s.resultHero, elevation.raised]}>
+            <View style={[s.resultHero, elevation.float]}>
               <Text style={s.resultEmoji}>🔥</Text>
               <Text style={s.resultTitle}>Workout Complete!</Text>
               <View style={s.resultStats}>
@@ -209,7 +209,7 @@ export default function ExerciseScreen() {
                 </View>
               </View>
               <Text style={s.resMessage}>{sessionResult.message}</Text>
-              <TouchableOpacity style={[s.cta, elevation.warmGlow]} onPress={resetAll}>
+              <TouchableOpacity style={[s.cta, elevation.glow]} onPress={resetAll}>
                 <Text style={s.ctaText}>Finish Session</Text>
               </TouchableOpacity>
             </View>
@@ -263,7 +263,7 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
   },
   stopBtn: { flex: 1, backgroundColor: colors.surface, height: 60, borderRadius: radius.full, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderWidth: 2, borderColor: colors.health.danger + '30' },
-  cancelBtn: { width: 60, height: 60, borderRadius: 30, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', ...elevation.low },
+  cancelBtn: { width: 60, height: 60, borderRadius: 30, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', ...elevation.ambient },
   btnText: { fontSize: fonts.sizes.md, fontWeight: '700', color: '#fff' },
 
   feedbackCard: {
