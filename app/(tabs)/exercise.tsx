@@ -1,290 +1,263 @@
 /**
- * PART:   Exercise Tracker — Wellness Redesign
- * ACTOR:  Gemini 3.1
- * PHASE:  UI Redesign — Floating Cards
- * TASK:   AI form tracking with Ivory bg and Sage Green theme
- * SCOPE:  IN: UI, state transitions, gọi exerciseAPI
- *         OUT: tính góc (useRepCounter), MediaPipe (PoseDetector)
+ * PART:   Activity Screen — Steps, AZM, HR Zones, Exercise log
+ * ACTOR:  Claude Sonnet 4.6
+ * PHASE:  Phase 23s — Activity Service
+ * TASK:   Full activity dashboard: daily steps ring, AZM, HR zones, activity history.
+ *         Driven by useActivity hook (Health Connect or mock).
+ * SCOPE:  IN: display metrics, manual exercise log entry
+ *         OUT: real-time accelerometer (native build), GPS tracking (Phase 24s)
  */
 
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  ScrollView, Animated, Dimensions,
+  ScrollView, Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Circle } from 'react-native-svg';
 import {
-  Play,
-  Square,
-  X,
-  CheckCircle2,
-  AlertCircle,
-  Dumbbell,
-  Trophy,
-  Activity,
-  LucideIcon
+  Footprints, Zap, Flame, Clock,
+  Heart, Activity, ChevronRight, RefreshCw,
+  TrendingUp,
 } from 'lucide-react-native';
-import Svg, { Circle, Line } from 'react-native-svg';
-import { colors, fonts, spacing, radius, elevation } from '@/constants/theme';
-import { useRepCounter } from '@/hooks/useRepCounter';
-import { exerciseAPI } from '@/services/api/exerciseAPI';
-import { useUserStore } from '@/store/userStore';
-import { useQueryClient } from '@tanstack/react-query';
-import type { ExerciseType } from '@/types/pose';
+import { useTheme } from '@/hooks/useTheme';
+import { useActivity } from '@/hooks/useActivity';
+import { formatDistance, DAILY_STEP_GOAL, WEEKLY_AZM_TARGET } from '@/services/health/activityService';
 
 const W = Dimensions.get('window').width;
+const RING_R = 70;
+const RING_C = 2 * Math.PI * RING_R;
 
-const EXERCISES: Array<{
-  type: ExerciseType;
-  label: string;
-  icon: LucideIcon;
-  targetReps: number;
-  muscles: string;
-}> = [
-    { type: 'push_up', label: 'Push Ups', icon: Activity, targetReps: 10, muscles: 'Chest • Shoulders • Triceps' },
-    { type: 'squat', label: 'Squats', icon: Dumbbell, targetReps: 15, muscles: 'Quads • Glutes • Core' },
-    { type: 'bicep_curl', label: 'Bicep Curls', icon: Dumbbell, targetReps: 12, muscles: 'Biceps • Forearms' },
-    { type: 'shoulder_press', label: 'Shoulder Press', icon: Trophy, targetReps: 10, muscles: 'Shoulders • Triceps • Core' },
-  ];
+const MOCK_HISTORY = [
+  { type: 'Walking',  duration: 32, calories: 128, time: '07:14', color: '#4ECFB5' },
+  { type: 'Running',  duration: 18, calories: 210, time: '17:30', color: '#C1274A' },
+  { type: 'Cycling',  duration: 45, calories: 340, time: '12:00', color: '#F59E0B' },
+];
 
-type ScreenState = 'pick' | 'tracking' | 'result';
+export default function ActivityScreen() {
+  const { colors, fonts, spacing } = useTheme();
+  const { metrics, zones, isLoading, isHealthConnectAvailable, refresh } = useActivity();
+  const [refreshing, setRefreshing] = useState(false);
 
-export default function ExerciseScreen() {
-  const [screenState, setScreenState] = useState<ScreenState>('pick');
-  const [selectedExercise, setSelectedExercise] = useState<(typeof EXERCISES)[number]>(EXERCISES[0]);
-  const [startTime, setStartTime] = useState<number>(0);
-  const [sessionResult, setSessionResult] = useState<{ reps: number; score: number; message: string } | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-
-  const userId = useUserStore((s) => s.profile?.id ?? null);
-  const queryClient = useQueryClient();
-
-  const handleComplete = useCallback(async (doneReps: number) => {
-    const durationS = Math.round((Date.now() - startTime) / 1000);
-    setIsSaving(true);
-    try {
-      const res = await exerciseAPI.saveSession({
-        user_id: userId,
-        exercise_type: selectedExercise.type,
-        reps_completed: doneReps,
-        target_reps: selectedExercise.targetReps,
-        duration_s: durationS,
-        passed: doneReps >= selectedExercise.targetReps,
-      });
-      setSessionResult({
-        reps: res.data.reps_completed,
-        score: res.data.score,
-        message: res.data.message,
-      });
-    } catch {
-      setSessionResult({
-        reps: doneReps,
-        score: Math.round((doneReps / selectedExercise.targetReps) * 100),
-        message: 'Exercise Saved Offline.',
-      });
-    } finally {
-      setIsSaving(false);
-      repCounter.stop();
-      setScreenState('result');
-      queryClient.invalidateQueries({ queryKey: ['health-score'] });
-    }
-  }, [startTime, userId, selectedExercise, queryClient]);
-
-  const repCounter = useRepCounter(
-    selectedExercise.type,
-    selectedExercise.targetReps,
-    handleComplete,
-  );
-
-  function selectAndStart(ex: (typeof EXERCISES)[number]) {
-    setSelectedExercise(ex);
-    setStartTime(Date.now());
-    setScreenState('tracking');
+  async function handleRefresh() {
+    setRefreshing(true);
+    await refresh();
+    setRefreshing(false);
   }
 
-  function resetAll() {
-    repCounter.reset();
-    setSessionResult(null);
-    setScreenState('pick');
-  }
+  const stepPct   = metrics.step_goal_pct / 100;
+  const dashOffset = RING_C * (1 - stepPct);
+
+  const pad = spacing.lg;
 
   return (
-    <SafeAreaView style={s.root} edges={['top']}>
-      {/* ── HEADER ── */}
-      <View style={s.header}>
-        <Text style={s.title}>AI Trainer</Text>
-        <Text style={s.subtitle}>Real-time movement analysis</Text>
-      </View>
-
+    <SafeAreaView style={[s.root, { backgroundColor: colors.background }]} edges={['top']}>
       <ScrollView
-        contentContainerStyle={s.scrollContent}
+        contentContainerStyle={[s.content, { paddingBottom: 110, paddingHorizontal: pad }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── PICK STATE ── */}
-        {screenState === 'pick' && (
-          <View style={s.pickList}>
-            <Text style={s.sectionTitle}>Select Workout</Text>
-            {EXERCISES.map((ex) => (
-              <TouchableOpacity
-                key={ex.type}
-                style={[s.exCard, elevation.float]}
-                onPress={() => selectAndStart(ex)}
-              >
-                <View style={[s.exIcon, { backgroundColor: colors.secondary + '15' }]}>
-                  <ex.icon size={24} color={colors.secondary} strokeWidth={2} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.exLabel}>{ex.label}</Text>
-                  <Text style={s.exMuscles}>{ex.muscles}</Text>
-                </View>
-                <View style={s.exBadge}>
-                  <Text style={s.exBadgeText}>{ex.targetReps} reps</Text>
-                </View>
-              </TouchableOpacity>
+        {/* ── Header ── */}
+        <View style={s.header}>
+          <View>
+            <Text style={[s.title, { color: colors.text.primary, fontFamily: fonts.black }]}>Activity</Text>
+            <Text style={[s.sub, { color: colors.text.muted, fontFamily: fonts.regular }]}>
+              {isHealthConnectAvailable ? 'Health Connect' : 'Mock data'}
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={handleRefresh}
+            style={[s.refreshBtn, { backgroundColor: colors.surface }]}
+          >
+            <RefreshCw size={18} color={refreshing ? colors.secondary : colors.text.muted} strokeWidth={2} />
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Steps ring hero ── */}
+        <LinearGradient
+          colors={['#C1274A', '#E8688A']}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+          style={[s.heroCard, { borderRadius: 24 }]}
+        >
+          <View style={s.ringWrap}>
+            <Svg width={170} height={170} viewBox="0 0 170 170">
+              {/* Track */}
+              <Circle cx={85} cy={85} r={RING_R} stroke="rgba(255,255,255,0.2)" strokeWidth={12} fill="none" />
+              {/* Fill */}
+              <Circle
+                cx={85} cy={85} r={RING_R}
+                stroke="rgba(255,255,255,0.95)"
+                strokeWidth={12} fill="none"
+                strokeDasharray={RING_C}
+                strokeDashoffset={dashOffset}
+                strokeLinecap="round"
+                transform="rotate(-90 85 85)"
+              />
+            </Svg>
+            <View style={s.ringCenter}>
+              <Footprints size={22} color="rgba(255,255,255,0.8)" strokeWidth={2} />
+              <Text style={[s.ringSteps, { fontFamily: fonts.black }]}>
+                {metrics.steps.toLocaleString()}
+              </Text>
+              <Text style={[s.ringGoal, { fontFamily: fonts.regular }]}>
+                / {DAILY_STEP_GOAL.toLocaleString()}
+              </Text>
+            </View>
+          </View>
+
+          <View style={s.heroStats}>
+            {[
+              { icon: Activity, label: 'Khoảng cách', value: formatDistance(metrics.distance_m) },
+              { icon: Flame,    label: 'Calories',     value: `${metrics.calories_active} kcal` },
+              { icon: Clock,    label: 'Vận động',     value: `${metrics.active_minutes} min` },
+            ].map(({ icon: Icon, label, value }) => (
+              <View key={label} style={s.heroStat}>
+                <Icon size={16} color="rgba(255,255,255,0.7)" strokeWidth={2} />
+                <Text style={[s.heroStatValue, { fontFamily: fonts.bold }]}>{value}</Text>
+                <Text style={[s.heroStatLabel, { fontFamily: fonts.regular }]}>{label}</Text>
+              </View>
             ))}
           </View>
-        )}
+        </LinearGradient>
 
-        {/* ── TRACKING STATE ── */}
-        {screenState === 'tracking' && (
-          <View style={s.trackingBox}>
-            <View style={[s.cameraStage, elevation.float]}>
-              <View style={s.cameraOverlay}>
-                <Text style={s.giantRep}>{repCounter.reps}</Text>
-                <Text style={s.repLabel}>REPS</Text>
-              </View>
-              <View style={s.statusPill}>
-                <View style={[s.dot, repCounter.isRunning && { backgroundColor: colors.health.good }]} />
-                <Text style={s.statusText}>{repCounter.isRunning ? 'LIVE AI TRACKING' : 'READY'}</Text>
-              </View>
+        {/* ── Active Zone Minutes ── */}
+        <View style={[s.azmCard, { backgroundColor: colors.surface }]}>
+          <View style={s.azmHeader}>
+            <View style={[s.azmIcon, { backgroundColor: colors.secondary + '20' }]}>
+              <Zap size={20} color={colors.secondary} strokeWidth={2} />
             </View>
-
-            <View style={s.controlRow}>
-              {!repCounter.isRunning ? (
-                <TouchableOpacity style={[s.primaryBtn, elevation.glow]} onPress={repCounter.start}>
-                  <Play size={20} color="#fff" strokeWidth={2.5} fill="#fff" />
-                  <Text style={s.btnText}>Start Now</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity style={s.stopBtn} onPress={repCounter.stop}>
-                  <Square size={20} color={colors.health.danger} strokeWidth={2.5} fill={colors.health.danger} />
-                  <Text style={[s.btnText, { color: colors.health.danger }]}>Stop</Text>
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity style={s.cancelBtn} onPress={resetAll}>
-                <X size={24} color={colors.text.secondary} strokeWidth={2.5} />
-              </TouchableOpacity>
+            <View style={{ flex: 1 }}>
+              <Text style={[s.azmTitle, { color: colors.text.primary, fontFamily: fonts.bold }]}>
+                Active Zone Minutes
+              </Text>
+              <Text style={[s.azmSub, { color: colors.text.muted, fontFamily: fonts.regular }]}>
+                Mục tiêu tuần: {WEEKLY_AZM_TARGET} AZM
+              </Text>
             </View>
-
-            <View style={s.feedbackCard}>
-              <View style={[s.feedbackIcon, { backgroundColor: repCounter.feedback.severity === 'good' ? colors.health.good + '20' : colors.health.warning + '20' }]}>
-                {repCounter.feedback.severity === 'good'
-                  ? <CheckCircle2 size={24} color={colors.health.good} strokeWidth={2.5} />
-                  : <AlertCircle size={24} color={colors.health.warning} strokeWidth={2.5} />
-                }
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.feedbackLabel}>FORM FEEDBACK</Text>
-                <Text style={s.feedbackTitle}>{repCounter.feedback.message}</Text>
-              </View>
-            </View>
+            <Text style={[s.azmScore, { color: colors.secondary, fontFamily: fonts.black }]}>
+              {metrics.azm}
+            </Text>
           </View>
-        )}
 
-        {/* ── RESULT STATE ── */}
-        {screenState === 'result' && sessionResult && (
-          <View style={s.resultBox}>
-            <View style={[s.resultHero, elevation.float]}>
-              <Text style={s.resultEmoji}>🔥</Text>
-              <Text style={s.resultTitle}>Workout Complete!</Text>
-              <View style={s.resultStats}>
-                <View style={s.resStat}>
-                  <Text style={s.resVal}>{sessionResult.reps}</Text>
-                  <Text style={s.resLabel}>Reps</Text>
+          {/* Zone bars */}
+          {([
+            { key: 'fat_burn', label: 'Fat Burn',  color: '#F59E0B', pts: 1 },
+            { key: 'cardio',   label: 'Cardio',    color: '#EF4444', pts: 2 },
+            { key: 'peak',     label: 'Peak',      color: '#8B5CF6', pts: 2 },
+          ] as const).map(({ key, label, color, pts }) => {
+            const mins = zones[key] ?? 0;
+            const maxMins = 60;
+            return (
+              <View key={key} style={s.zoneRow}>
+                <Text style={[s.zoneLabel, { color: colors.text.muted, fontFamily: fonts.regular }]}>
+                  {label}
+                </Text>
+                <View style={[s.zoneTrack, { backgroundColor: colors.border }]}>
+                  <View style={[s.zoneFill, { width: `${Math.min(100, (mins / maxMins) * 100)}%`, backgroundColor: color }]} />
                 </View>
-                <View style={s.resDivider} />
-                <View style={s.resStat}>
-                  <Text style={[s.resVal, { color: colors.secondary }]}>{sessionResult.score}</Text>
-                  <Text style={s.resLabel}>Form Score</Text>
-                </View>
+                <Text style={[s.zoneMins, { color: colors.text.secondary, fontFamily: fonts.semibold }]}>
+                  {mins}m
+                </Text>
+                <Text style={[s.zonePts, { color, fontFamily: fonts.bold }]}>
+                  ×{pts}
+                </Text>
               </View>
-              <Text style={s.resMessage}>{sessionResult.message}</Text>
-              <TouchableOpacity style={[s.cta, elevation.glow]} onPress={resetAll}>
-                <Text style={s.ctaText}>Finish Session</Text>
-              </TouchableOpacity>
-            </View>
+            );
+          })}
+        </View>
+
+        {/* ── HR stat card ── */}
+        <View style={[s.hrCard, { backgroundColor: colors.surface }]}>
+          <Heart size={18} color="#EF4444" strokeWidth={2} fill="#EF4444" />
+          <Text style={[s.hrTitle, { color: colors.text.primary, fontFamily: fonts.bold }]}>Heart Rate</Text>
+          <View style={s.hrStats}>
+            {[
+              { label: 'Nghỉ', value: '62', color: colors.secondary },
+              { label: 'TB',   value: '78', color: colors.text.secondary },
+              { label: 'Max',  value: '142', color: '#EF4444' },
+            ].map(({ label, value, color }) => (
+              <View key={label} style={s.hrStat}>
+                <Text style={[s.hrValue, { color, fontFamily: fonts.black }]}>{value}</Text>
+                <Text style={[s.hrLabel, { color: colors.text.muted, fontFamily: fonts.regular }]}>{label}</Text>
+              </View>
+            ))}
           </View>
-        )}
+        </View>
+
+        {/* ── Activity history ── */}
+        <Text style={[s.sectionTitle, { color: colors.text.primary, fontFamily: fonts.bold }]}>
+          Hôm nay
+        </Text>
+        {MOCK_HISTORY.map(({ type, duration, calories, time, color }) => (
+          <TouchableOpacity
+            key={type + time}
+            activeOpacity={0.8}
+            style={[s.historyRow, { backgroundColor: colors.surface }]}
+          >
+            <View style={[s.historyIcon, { backgroundColor: color + '18' }]}>
+              <TrendingUp size={18} color={color} strokeWidth={2} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[s.historyType, { color: colors.text.primary, fontFamily: fonts.semibold }]}>{type}</Text>
+              <Text style={[s.historyMeta, { color: colors.text.muted, fontFamily: fonts.regular }]}>
+                {duration} phút · {calories} kcal
+              </Text>
+            </View>
+            <Text style={[s.historyTime, { color: colors.text.muted, fontFamily: fonts.regular }]}>{time}</Text>
+            <ChevronRight size={16} color={colors.text.muted} strokeWidth={2} />
+          </TouchableOpacity>
+        ))}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
-  header: { padding: spacing.lg },
-  title: { fontSize: fonts.sizes.xl, fontWeight: '800', color: colors.text.primary, letterSpacing: -0.5 },
-  subtitle: { fontSize: fonts.sizes.sm, color: colors.text.secondary, marginTop: 2 },
-  scrollContent: { paddingHorizontal: spacing.lg, paddingBottom: 100 },
-
-  sectionTitle: { fontSize: fonts.sizes.sm, fontWeight: '700', color: colors.text.secondary, marginBottom: spacing.md },
-
-  // Pick List
-  pickList: { gap: spacing.md },
-  exCard: {
-    backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg,
-    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+  root: { flex: 1 },
+  content: { paddingTop: 20, gap: 14 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  title: { fontSize: 26 },
+  sub: { fontSize: 12, marginTop: 2 },
+  refreshBtn: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
+  heroCard: {
+    padding: 20, alignItems: 'center', gap: 16,
+    shadowColor: '#C1274A', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 8,
   },
-  exIcon: { width: 50, height: 50, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  exLabel: { fontSize: fonts.sizes.md, fontWeight: '700', color: colors.text.primary },
-  exMuscles: { fontSize: 11, color: colors.text.muted, marginTop: 2 },
-  exBadge: { backgroundColor: colors.surfaceElevated, paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.full },
-  exBadgeText: { fontSize: 10, fontWeight: '800', color: colors.text.secondary },
-
-  // Tracking
-  trackingBox: { gap: spacing.lg, marginTop: spacing.md },
-  cameraStage: {
-    height: 440, width: '100%', borderRadius: radius.xl, backgroundColor: '#1A1D23',
-    alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden',
-  },
-  cameraOverlay: { alignItems: 'center' },
-  giantRep: { fontSize: 140, fontWeight: '900', color: '#fff', opacity: 0.9 },
-  repLabel: { fontSize: 14, fontWeight: '800', color: 'rgba(255,255,255,0.6)', letterSpacing: 4, marginTop: -20 },
-  statusPill: {
-    position: 'absolute', top: 20, right: 20, flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.full,
-  },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.text.muted },
-  statusText: { fontSize: 10, fontWeight: '800', color: '#fff', letterSpacing: 1 },
-
-  controlRow: { flexDirection: 'row', gap: spacing.md, alignItems: 'center' },
-  primaryBtn: {
-    flex: 1, backgroundColor: colors.accent, height: 60, borderRadius: radius.full,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
-  },
-  stopBtn: { flex: 1, backgroundColor: colors.surface, height: 60, borderRadius: radius.full, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderWidth: 2, borderColor: colors.health.danger + '30' },
-  cancelBtn: { width: 60, height: 60, borderRadius: 30, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', ...elevation.ambient },
-  btnText: { fontSize: fonts.sizes.md, fontWeight: '700', color: '#fff' },
-
-  feedbackCard: {
-    flexDirection: 'row', gap: spacing.md, backgroundColor: colors.surface,
-    padding: spacing.lg, borderRadius: radius.lg, ...elevation.float,
-  },
-  feedbackIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  feedbackLabel: { fontSize: 10, fontWeight: '800', color: colors.primary, letterSpacing: 1.5, marginBottom: 2 },
-  feedbackTitle: { fontSize: fonts.sizes.md, fontWeight: '700', color: colors.text.primary },
-
-  // Result
-  resultBox: { marginTop: 40 },
-  resultHero: { backgroundColor: colors.surface, borderRadius: radius.xl, padding: spacing.xxl, alignItems: 'center' },
-  resultEmoji: { fontSize: 56, marginBottom: 16 },
-  resultTitle: { fontSize: 24, fontWeight: '800', color: colors.text.primary, marginBottom: 24 },
-  resultStats: { flexDirection: 'row', width: '100%', marginBottom: 30 },
-  resStat: { flex: 1, alignItems: 'center' },
-  resVal: { fontSize: 40, fontWeight: '900', color: colors.text.primary },
-  resLabel: { fontSize: 12, fontWeight: '700', color: colors.text.muted, textTransform: 'uppercase', marginTop: 4 },
-  resDivider: { width: 1, backgroundColor: colors.border },
-  resMessage: { fontSize: fonts.sizes.md, color: colors.text.secondary, textAlign: 'center', marginBottom: 30 },
-  cta: { backgroundColor: colors.accent, width: '100%', height: 56, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  ctaText: { color: '#fff', fontSize: fonts.sizes.md, fontWeight: '700' },
+  ringWrap: { position: 'relative', width: 170, height: 170, alignItems: 'center', justifyContent: 'center' },
+  ringCenter: { position: 'absolute', alignItems: 'center', gap: 2 },
+  ringSteps: { color: '#FFF', fontSize: 28, marginTop: 2 },
+  ringGoal: { color: 'rgba(255,255,255,0.7)', fontSize: 12 },
+  heroStats: { flexDirection: 'row', justifyContent: 'space-around', width: '100%' },
+  heroStat: { alignItems: 'center', gap: 3 },
+  heroStatValue: { color: '#FFF', fontSize: 15 },
+  heroStatLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 11 },
+  azmCard: { borderRadius: 20, padding: 18, gap: 14,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
+  azmHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  azmIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  azmTitle: { fontSize: 15 },
+  azmSub: { fontSize: 12, marginTop: 2 },
+  azmScore: { fontSize: 28 },
+  zoneRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  zoneLabel: { fontSize: 12, width: 64 },
+  zoneTrack: { flex: 1, height: 6, borderRadius: 3, overflow: 'hidden' },
+  zoneFill: { height: '100%', borderRadius: 3 },
+  zoneMins: { fontSize: 12, width: 28, textAlign: 'right' },
+  zonePts: { fontSize: 11, width: 22 },
+  hrCard: { borderRadius: 20, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 10,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
+  hrTitle: { fontSize: 15, flex: 1 },
+  hrStats: { flexDirection: 'row', gap: 16 },
+  hrStat: { alignItems: 'center', gap: 2 },
+  hrValue: { fontSize: 18 },
+  hrLabel: { fontSize: 11 },
+  sectionTitle: { fontSize: 17, marginTop: 4 },
+  historyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 16, padding: 14,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
+  historyIcon: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  historyType: { fontSize: 14 },
+  historyMeta: { fontSize: 12, marginTop: 2 },
+  historyTime: { fontSize: 12 },
 });
+
