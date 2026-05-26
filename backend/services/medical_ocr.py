@@ -277,20 +277,28 @@ def parse_numeric_value(text: str) -> Optional[float]:
     """
     Extract numeric value from OCR cell text.
     Handles: "5.6", "5,6" (Vietnamese comma), "< 5.6", "> 5.6", "5.6 mg/dL".
-    Returns None if no valid number found.
+    Also handles units with ^ (e.g. "WBC: 6.5 10^3/uL") without grabbing the
+    exponent. Returns None if no valid number found.
 
-    Uses negative lookbehind (?<![a-zA-Z]) to skip digits embedded in test names
-    like "HbA1c", "A1C", "WBC1" etc. Only matches standalone numeric values.
+    Strategy:
+    1. If text contains ":" or "=", only consider the RHS for the first number.
+    2. Skip digits immediately preceded by a letter (skips HbA1c, A1C, etc.)
+       or preceded by "^" (skips exponents like 10^3).
+    3. Return the FIRST qualifying match.
     """
     # Normalize Vietnamese decimal comma
     text = text.replace(",", ".")
-    # Match numbers NOT immediately preceded by a letter (skips A1c, HbA1c, etc.)
-    # Pattern: digit sequence not preceded by alpha character
-    matches = list(re.finditer(r"(?<![a-zA-Z])(\d+\.?\d*)", text))
+    # Focus on right-hand side of ":" or "=" (test name is on the left)
+    for sep in (":", "="):
+        if sep in text:
+            text = text.split(sep, 1)[1]
+            break
+    # Skip numbers preceded by a letter OR by "^" (exponents)
+    matches = list(re.finditer(r"(?<![a-zA-Z^])(\d+\.?\d*)", text))
     if matches:
         try:
-            # Use the last standalone number (most likely to be the lab value)
-            return float(matches[-1].group(1))
+            # First match is the lab value (the RHS starts with it)
+            return float(matches[0].group(1))
         except ValueError:
             return None
     return None
