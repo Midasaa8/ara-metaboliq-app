@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config.settings import settings
 from .routers.voice import router as voice_router
 from .routers.health import router as health_router
+from .routers.wave1 import router as wave1_router
 
 logging.basicConfig(
     level=logging.DEBUG if settings.DEBUG else logging.INFO,
@@ -39,6 +40,7 @@ app.add_middleware(
 # ── Route mounting ──
 app.include_router(voice_router, prefix="/api/v1")
 app.include_router(health_router, prefix="/api/v1")
+app.include_router(wave1_router, prefix="/api/v1")
 
 
 @app.get("/health")
